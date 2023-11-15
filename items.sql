@@ -8,6 +8,7 @@ create table item (
     item_description varchar(500),
     price int,
     status enum('sold','on-hold','available'),
-    category enum('Home', 'Beauty', 'Electronics'),
+    category enum('Home', 'Beauty', 'Electronics''Collectibles', 'Sports', 
+                    'Arts', 'Books', 'Other'),
     primary key (post_id, item_id)
 );
