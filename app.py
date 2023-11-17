@@ -25,6 +25,18 @@ app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 def index():
     return render_template('main.html',title='Hello')
 
+@app.route('/post/', methods=["GET", "POST"])
+def post():
+    '''
+    On GET, renders a form that allows the user to add an item to a post.
+    '''
+    conn = dbi.connect()
+    if request.method == 'GET':
+        return render_template('post.html', title='Post')
+    else: # request.method == 'POST'
+
+################################################################################
+################################################################################
 # You will probably not need the routes below, but they are here
 # just in case. Please delete them if you are not using them
 
@@ -65,6 +77,8 @@ def testform():
     # these forms go to the formecho route
     return render_template('testform.html')
 
+################################################################################
+################################################################################
 
 if __name__ == '__main__':
     import sys, os
@@ -75,7 +89,7 @@ if __name__ == '__main__':
     else:
         port = os.getuid()
     # set this local variable to 'wmdb' or your personal or team db
-    db_to_use = 'put_database_name_here_db' 
+    db_to_use = 'ejk_db' 
     print('will connect to {}'.format(db_to_use))
     dbi.conf(db_to_use)
     app.debug = True
