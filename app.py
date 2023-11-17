@@ -25,6 +25,33 @@ app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 def index():
     return render_template('main.html',title='Hello')
 
+@app.route('/update/<post_id>', methods=["GET", "POST"])
+def update():
+    '''
+    Update/delete a post's descriptions, images, etc.
+    '''
+    action = request.form.get("submit")
+    if action == "update post"
+
+    elif action == "update item"
+
+    elif action == "delete"
+    pass
+
+
+@app.route('/update/<post_id>/<item_id>', methods=["GET", "POST"])
+def update():
+    '''
+    Update/delete a post's descriptions, images, etc.
+    '''
+    action = request.form.get("submit")
+    if action == "update post"
+
+    elif action == "update item"
+
+    elif action == "delete"
+    pass
+
 # You will probably not need the routes below, but they are here
 # just in case. Please delete them if you are not using them
 
