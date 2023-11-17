@@ -11,6 +11,8 @@ import cs304dbi as dbi
 
 import random
 
+import queries
+
 app.secret_key = 'your secret here'
 # replace that with a random key
 app.secret_key = ''.join([ random.choice(('ABCDEFGHIJKLMNOPQRSTUVXYZ' +
@@ -23,74 +25,65 @@ app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 
 @app.route('/')
 def index():
-    return render_template('main.html',title='Hello')
+    return render_template('main.html',title='About')
 
 @app.route('/update/<post_id>', methods=["GET", "POST"])
-def update():
+def update_post(post_id):
     '''
     Update/delete a post's descriptions, images, etc.
     '''
-    action = request.form.get("submit")
-    if action == "update post"
+    conn = dbi.connect()
+    # get info about the post if post_id exists otherwise flash msg
+    post = queries.return_post_if_exists(conn, post_id)
+    if not post:
+        flash("No post with id: " + str(post_id))
+        return render_template('main.html', title='About')
+    
+    # else if post exists, get its items
+    items = queries.get_post_items(conn, post_id)
+    #TODO: get post's user_id's name to display on update.html
+    #TODO: need to display list of links to items under posts in update.html
 
-    elif action == "update item"
+    if request.method == 'GET':
+        return render_template('update.html', post = post, items = items) 
+    else: # POST method
+        # get submit button value: update or delete
+        button = request.form.get('submit')
+        kind = request.form.get('post-kind') 
+        description = request.form.get('post-description')
 
-    elif action == "delete"
-    pass
+        if button == 'update':
+            # update post with either or both new kind & description
+            queries.update_post(conn, post_id, kind, description)
+            new_post = queries.return_post_if_exists(conn, post_id)
+            flash('Post with id (' + str(post_id) + ') was updated successfully')
+            return render_template('update.html', post = new_post, items = items)
+        
+        elif button == 'delete':
+            #TODO: deleting post deletes all items under it
+            queries.delete_post(conn, post_id)
+            flash('Post with id (' + str(post_id) + ') was deleted successfully')
+            return render_template('main.html', title='About')
 
 
 @app.route('/update/<post_id>/<item_id>', methods=["GET", "POST"])
-def update():
+def update_item(post_id, item_id):
     '''
-    Update/delete a post's descriptions, images, etc.
+    Update/delete an item's descriptions, images, etc.
     '''
-    action = request.form.get("submit")
-    if action == "update post"
-
-    elif action == "update item"
-
-    elif action == "delete"
     pass
 
-# You will probably not need the routes below, but they are here
-# just in case. Please delete them if you are not using them
 
-@app.route('/greet/', methods=["GET", "POST"])
-def greet():
+@app.route('/post/', methods=["GET", "POST"])
+def post():
+    '''
+    On GET, renders a form that allows the user to add an item to a post.
+    '''
+    conn = dbi.connect()
     if request.method == 'GET':
-        return render_template('greet.html', title='Customized Greeting')
-    else:
-        try:
-            username = request.form['username'] # throws error if there's trouble
-            flash('form submission successful')
-            return render_template('greet.html',
-                                   title='Welcome '+username,
-                                   name=username)
-
-        except Exception as err:
-            flash('form submission error'+str(err))
-            return redirect( url_for('index') )
-
-@app.route('/formecho/', methods=['GET','POST'])
-def formecho():
-    if request.method == 'GET':
-        return render_template('form_data.html',
-                               method=request.method,
-                               form_data=request.args)
-    elif request.method == 'POST':
-        return render_template('form_data.html',
-                               method=request.method,
-                               form_data=request.form)
-    else:
-        # maybe PUT?
-        return render_template('form_data.html',
-                               method=request.method,
-                               form_data={})
-
-@app.route('/testform/')
-def testform():
-    # these forms go to the formecho route
-    return render_template('testform.html')
+        return render_template('post.html', title='Post')
+    else: # request.method == 'POST'
+        pass
 
 
 if __name__ == '__main__':
@@ -102,7 +95,7 @@ if __name__ == '__main__':
     else:
         port = os.getuid()
     # set this local variable to 'wmdb' or your personal or team db
-    db_to_use = 'put_database_name_here_db' 
+    db_to_use = 'ejk100_db' 
     print('will connect to {}'.format(db_to_use))
     dbi.conf(db_to_use)
     app.debug = True
