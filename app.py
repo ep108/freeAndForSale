@@ -13,6 +13,8 @@ import random
 
 import queries
 
+import time
+
 app.secret_key = 'your secret here'
 # replace that with a random key
 app.secret_key = ''.join([ random.choice(('ABCDEFGHIJKLMNOPQRSTUVXYZ' +
@@ -26,6 +28,33 @@ app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 @app.route('/')
 def index():
     return render_template('main.html',title='About')
+
+@app.route('/create_post/', methods=['GET', 'POST'])
+def create_post():
+    '''
+    On GET, renders post.html page which allows user to create a post. 
+    On POST, creates a post (which creates a post-id) and allows users to 
+    add items to the post (items associated with that given post-id).
+    '''
+    if request.method == 'GET':
+        return render_template('post.html',page_title='Post')
+    else: # request.method == 'POST'
+        conn = dbi.connect()
+
+        # get data from the form
+        user_id = request.form.get('user_id')
+        post_kind = request.form.get('post_kind')
+        post_description = request.form.get('post_description')
+        post_datetime = time.ctime() #gets current time
+
+        # create a post in post table using user data
+        post_id = queries.upload_post(conn, user_id, post_kind, 
+                                      post_description, post_datetime)
+        flash(f'Post with post ID {post_id} successfully created!')
+        # uses the post_id from this upload as an input parameter when adding items to the post
+
+    return
+    
 
 @app.route('/update/<post_id>', methods=["GET", "POST"])
 def update_post(post_id):
