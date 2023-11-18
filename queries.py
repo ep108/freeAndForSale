@@ -1,6 +1,39 @@
 import cs304dbi as dbi
 
 
+def upload_post(conn,user_id,post_kind, post_description, post_datetime):
+    '''
+    Creates a new post with a new automatically created post ID, 
+    kind (giveaway or sale), description (500 characters max), and 
+    time that the post was created.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+                 INSERT INTO post(user_id, post_kind, post_description, post_datetime) 
+                 VALUES (%s,%s,%s,%s)
+                 ''',
+                 [user_id,post_kind, post_description, post_datetime])
+    conn.commit()
+    return
+    
+def upload_item(conn, post_id, item_name, item_description, price, category):
+    '''
+    Uploads an item to the item table that has an automatic item ID, the item's 
+    associated post ID, the item name (100 characters max), the description 
+    (500 characters max), the price (decimal), and the category ('Home','Beauty',
+    'Electronics','Collectibles','Sports','Arts','Books','Other').
+
+    Automatically sets item status to 'available.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+                 INSERT INTO item(post_id, item_name, item_description, price, status, category) 
+                 VALUES (%s,%s,%s,%s,'available',%s)
+                 ''',
+                 [post_id, item_name, item_description, price, category])
+    conn.commit()
+    return
+
 def return_post_if_exists(conn, post_id):
     '''
     Checks if post with given id exists in database.
@@ -82,8 +115,8 @@ if __name__ == '__main__':
     conn = dbi.connect()
 
     # testing return_post_if_exists()
-    print("\nTesting return_post_if_exists()")
-    return_post_if_exists(conn, 1)
+    # print("\nTesting return_post_if_exists()")
+    # return_post_if_exists(conn, 1)
     # returns: 
     # check exists post:  {'post_id': 1, 'user_id': 1, 
     # 'post_kind': 'sale', 'post_description': 'selling stuff 
@@ -91,8 +124,8 @@ if __name__ == '__main__':
     # 20, 14, 45)}
 
     # testing get_post_items()
-    print("\nTesting get_post_items()")
-    get_post_items(conn, 1) # get all items with post_id of 1
+    # print("\nTesting get_post_items()")
+    # get_post_items(conn, 1) # get all items with post_id of 1
     # returns:
     # items in given post  [{'item_id': 1, 'post_id': 1, 'item_name': 
     # 'lamp', 'item_description': 'barely used; like new', 'price': Decimal('10.00'), 
@@ -101,10 +134,19 @@ if __name__ == '__main__':
     # 'available', 'category': 'Books'}]
 
     # testing update_post() - to test make sure to drop & reset tables
-    print("\nTesting update_post()")
-    update_post(conn, 1, "sale", "new description")
-    return_post_if_exists(conn, 1)
+    # print("\nTesting update_post()")
+    # update_post(conn, 1, "sale", "new description")
+    # return_post_if_exists(conn, 1)
 
     # testing delete_post() - after testing, reset database!!
-    print("\nTesting delete_post()")
-    delete_post(conn, 1)
+    # print("\nTesting delete_post()")
+    # delete_post(conn, 1)
+
+    # testing upload_post()
+    # print("\nTesting upload_post()")
+    # upload_post(conn,2, 'giveaway','Thanksgiving giveaway!','2023-11-18 00:15:00')
+
+    # testing upload_item()
+    print("\nTesting upload_item()")
+    upload_item(conn, 2, 'utensils','lightly used, one fork missing',0.00,'Home')
+    upload_item(conn, 2, 'plates','set of 8, fall decorations',0.00,'Home')
