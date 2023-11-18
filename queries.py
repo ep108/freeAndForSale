@@ -6,6 +6,8 @@ def upload_post(conn,user_id,post_kind, post_description, post_datetime):
     Creates a new post with a new automatically created post ID, 
     kind (giveaway or sale), description (500 characters max), and 
     time that the post was created.
+
+    Returns the post ID.
     '''
     curs = dbi.dict_cursor(conn)
     curs.execute('''
@@ -14,7 +16,11 @@ def upload_post(conn,user_id,post_kind, post_description, post_datetime):
                  ''',
                  [user_id,post_kind, post_description, post_datetime])
     conn.commit()
-    return
+    
+    # Get and return the post ID
+    curs.execute('SELECT last_insert_id()')
+    row = curs.fetchone()
+    return row['last_insert_id()']
     
 def upload_item(conn, post_id, item_name, item_description, price, category):
     '''
@@ -145,8 +151,10 @@ if __name__ == '__main__':
     # testing upload_post()
     # print("\nTesting upload_post()")
     # upload_post(conn,2, 'giveaway','Thanksgiving giveaway!','2023-11-18 00:15:00')
+    # post_id = upload_post(conn,2, 'sale','closet cleanout','2023-11-18 01:15:00')
+    # print(f'Automatically generated post ID: {post_id}')
 
     # testing upload_item()
-    print("\nTesting upload_item()")
-    upload_item(conn, 2, 'utensils','lightly used, one fork missing',0.00,'Home')
-    upload_item(conn, 2, 'plates','set of 8, fall decorations',0.00,'Home')
+    # print("\nTesting upload_item()")
+    # upload_item(conn, 2, 'utensils','lightly used, one fork missing',0.00,'Home')
+    # upload_item(conn, 2, 'plates','set of 8, fall decorations',0.00,'Home')
