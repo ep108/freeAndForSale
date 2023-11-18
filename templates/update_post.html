@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+  <!-- database is  ejk100_db-->
+  {% block main_content %}
+  <h1>Update Post</h1>
+
+    <form method=POST action="{{url_for('update_post', post_id = post.post_id)}}"> 
+      <table>
+        <tr>
+          <td><label for="posted-by">Posted By {{post.user_id}}</label></td>]
+        </tr>
+        <tr>
+          <td><label for="post-kind">Post Kind - sale or giveaway</label></td>
+          <td><input id="post-kind" name='post-kind' value='{{post.post_kind}}'></td>
+        </tr>
+        <tr>
+          <td><label for="post-description">Description of Post - 500 char max</label></td>
+          <td><input id="post-description" name='post-description' value='{{post.post_description}}'></td>
+        </tr>
+        <tr>
+          <td><label for="post_datetime">Posted On {{post.post_datetime}}</label></td>
+        </tr>
+        <tr>
+          <td><label for="post-items">Items in this Post - fix later with links to items</label></td>
+          {% for item in items %}
+            <td><input id="{{item.item_id}}" name='item' value='{{item.item_name}}'></td>
+          {% endfor %}
+          
+        </tr>
+      </table>
+      <input type="submit" name="submit" value="update">
+      <input type="submit" name="submit" value="delete">
+    </form>
+    {% endblock %}
