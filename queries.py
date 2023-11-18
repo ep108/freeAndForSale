@@ -38,7 +38,11 @@ def upload_item(conn, post_id, item_name, item_description, price, category):
                  ''',
                  [post_id, item_name, item_description, price, category])
     conn.commit()
-    return
+
+    # Get and return the item ID
+    curs.execute('SELECT last_insert_id()')
+    row = curs.fetchone()
+    return row['last_insert_id()']
 
 def return_post_if_exists(conn, post_id):
     '''
@@ -158,3 +162,5 @@ if __name__ == '__main__':
     # print("\nTesting upload_item()")
     # upload_item(conn, 2, 'utensils','lightly used, one fork missing',0.00,'Home')
     # upload_item(conn, 2, 'plates','set of 8, fall decorations',0.00,'Home')
+    # item_id = upload_item(conn, 2, 'linens','white and beige',0.00,'Home')
+    # print(f'Automatically generated item ID: {item_id}')
