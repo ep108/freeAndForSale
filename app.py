@@ -34,6 +34,7 @@ def post():
     if request.method == 'GET':
         return render_template('post.html', title='Post')
     else: # request.method == 'POST'
+        pass
 
 ################################################################################
 ################################################################################
@@ -89,7 +90,7 @@ if __name__ == '__main__':
     else:
         port = os.getuid()
     # set this local variable to 'wmdb' or your personal or team db
-    db_to_use = 'ejk_db' 
+    db_to_use = 'ejk100_db' 
     print('will connect to {}'.format(db_to_use))
     dbi.conf(db_to_use)
     app.debug = True
