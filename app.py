@@ -106,7 +106,7 @@ def update_item(post_id, item_id):
             queries.update_item(conn, post_id, item_id, name, description, price, status, category)
             new_item = queries.return_item_if_exists(conn, post_id, item_id)
             flash('Item with id (' + str(item_id) + ') was updated successfully')
-            return render_template('update_item.html', item = item)
+            return render_template('update_item.html', item = new_item)
        
         elif button == 'delete':
             queries.delete_item(conn, post_id, item_id)
