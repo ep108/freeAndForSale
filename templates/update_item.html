@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+  <!-- database is  ejk100_db-->
+  {% block main_content %}
+  <h1>Update Item</h1>
+
+    <form method=POST action="{{url_for('update_item', post_id = item.post_id, item_id = item.item_id)}}"> 
+      <table>
+        <tr>
+          <td><label for="item-post">Item Under Post with ID: {{item.post_id}}</label></td>
+        </tr>
+        <tr>
+          <td><label for="item-name">Item Name - 100 char max</label></td>
+          <td><input id="item-name" name='item-name' value='{{item.item_name}}'></td>
+        </tr>
+        <tr>
+          <td><label for="item-description">Description of Item - 500 char max</label></td>
+          <td>
+            <textarea id="item-description" name='item-description'>{{item.item_description}}</textarea>
+          </td>
+        </tr>
+        <tr>
+            <td><label for="item-price">Item Price</label></td>
+            <td><input id="item-price" name='item-price' value='{{item.price}}'></td>
+        </tr>
+        <tr>
+            <td><label for="item-status">Item Status</label></td>
+            <td>
+                <select id="item-status" name="item-status" value = '{{item.status}}'>
+                    <option value="sold" {% if item.status == 'sold' %}selected{% endif %}>sold</option>
+                    <option value="on-hold" {% if item.status == 'on-hold' %}selected{% endif %}>on-hold</option>
+                    <option value="available" {% if item.status == 'available' %}selected{% endif %}>available</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td><label for="item-category">Item Price</label></td>
+            <td>
+                <select id="item-category" name="item-category" value = '{{item.category}}'>
+                    <option value="Home" {% if item.category == 'Home' %}selected{% endif %}>Home</option>
+                    <option value="Beauty" {% if item.category == 'Beauty' %}selected{% endif %}>Beauty</option>
+                    <option value="Electronics" {% if item.category == 'Electronics' %}selected{% endif %}>Electronics</option>
+                    <option value="Collectables" {% if item.category == 'Collectables' %}selected{% endif %}>Collectables</option>
+                    <option value="Sports" {% if item.category == 'Sports' %}selected{% endif %}>Sports</option>
+                    <option value="Arts" {% if item.category == 'Arts' %}selected{% endif %}>Arts</option>
+                    <option value="Books" {% if item.category == 'Books' %}selected{% endif %}>Books</option>
+                    <option value="Other" {% if item.category == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+            </td>
+        </tr>
+      </table>
+      <p><input type="submit" name="submit" value="update"></p>
+      <p><input type="submit" name="submit" value="delete"></p>
+    </form>
+    {% endblock %}
