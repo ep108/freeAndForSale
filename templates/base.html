@@ -24,14 +24,27 @@
 {% block nav %}
 <nav>
   <ul>
-    <li><a href="{{url_for('index')}}">home</a></li>
+    <li><a href="{{url_for('index')}}">Home</a></li>
+    <li><a href="{{url_for('create_post')}}">Create a Post</a></li>
   </ul>
 </nav>
+
+<ul>
+  <li><a href="{{url_for('insert_item', post_id=1)}}">Example: Insert an item to post 1</a></li>
+  <li><a href="{{url_for('update_post', post_id=1)}}">Example: Update Post with ID 1</a></li>
+  <li><a href="{{url_for('update_item', post_id=1, item_id=1)}}">Example: Update Item with ID 1
+    under Post with ID 1
+  </a></li>
+</ul>
 {% endblock %}
 
 {% block main_content %}
 <h1>Welcome!</h1>
 {% endblock %}
+
+  <form action="{{url_for('reset_database')}}" method="post">
+    <button type="submit">Reset Database</button>
+  </form>
 
   <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
   {% block end_scripts %}

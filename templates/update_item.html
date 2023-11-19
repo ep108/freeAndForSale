@@ -6,7 +6,7 @@
     <form method=POST action="{{url_for('update_item', post_id = item.post_id, item_id = item.item_id)}}"> 
       <table>
         <tr>
-          <td><label for="item-post">Item Under Post with ID: {{item.post_id}}</label></td>]
+          <td><label for="item-post">Item Under Post with ID: {{item.post_id}}</label></td>
         </tr>
         <tr>
           <td><label for="item-name">Item Name - 100 char max</label></td>
@@ -14,7 +14,9 @@
         </tr>
         <tr>
           <td><label for="item-description">Description of Item - 500 char max</label></td>
-          <td><input id="item-description" name='item-description' value='{{item.item_description}}'></td>
+          <td>
+            <textarea id="item-description" name='item-description'>{{item.item_description}}</textarea>
+          </td>
         </tr>
         <tr>
             <td><label for="item-price">Item Price</label></td>
@@ -46,7 +48,7 @@
             </td>
         </tr>
       </table>
-      <input type="submit" name="submit" value="update">
-      <input type="submit" name="submit" value="delete">
+      <p><input type="submit" name="submit" value="update"></p>
+      <p><input type="submit" name="submit" value="delete"></p>
     </form>
     {% endblock %}
