@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<p>Click to <a href="{{ url_for('index') }}">return to the main page</a>.</p>
+
+<h1>Post Items</h1>
+<form method="post" action="{{url_for('create_post')}}">
+    <p><label>User ID:
+        <input required type="text" name="user_id" size="25" placeholder="ID">
+    </label></p>
+
+    <p><label>Post Type:
+        <select required name = "post_kind">
+            <option value='sale'>Sale</option>
+            <option value='giveaway'>Giveaway</option>
+        </select>
+    </label></p>
+
+    <p><label>Post Description:
+        <textarea required name="post_description" rows="3" cols="50" placeholder="item description"></textarea>
+    </label></p>
+
+    <p><input type="submit" value="Add Items to Post"></p>
+</form>
+
+{% endblock %}

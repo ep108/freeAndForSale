@@ -13,6 +13,8 @@ import random
 
 import queries
 
+from datetime import datetime
+
 app.secret_key = 'your secret here'
 # replace that with a random key
 app.secret_key = ''.join([ random.choice(('ABCDEFGHIJKLMNOPQRSTUVXYZ' +
@@ -26,6 +28,65 @@ app.config['TRAP_BAD_REQUEST_ERRORS'] = True
 @app.route('/')
 def index():
     return render_template('main.html',title='About')
+
+@app.route('/create_post/', methods=['GET', 'POST'])
+def create_post():
+    '''
+    On GET, renders create_post.html page which allows user to create a post. 
+    On POST, creates a post (which creates a post-id) and allows users to 
+    add items to the post (items associated with that given post-id).
+    '''
+    if request.method == 'GET':
+        return render_template('create_post.html',page_title='Create Post')
+    else: # request.method == 'POST'
+        conn = dbi.connect()
+        # get form data
+        user_id = request.form.get('user_id')
+        post_kind = request.form.get('post_kind')
+        post_description = request.form.get('post_description')
+        post_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # create a post in post table and get the post-id
+        post_id = queries.upload_post(conn, user_id, post_kind, 
+                                      post_description, post_datetime)
+        flash(f'Post with ID {post_id} successfully created!')
+
+        # uses the post_id from this upload as an input when adding items to the post
+        return redirect(url_for('insert_item', post_id=post_id))
+    
+@app.route('/insert_item/<post_id>', methods=["GET", "POST"])
+def insert_item(post_id):
+    '''
+    On GET, renders the form that allows users to enter item information.
+    On POST, uses form data to add an item to the item table and re-renders the 
+    empty form to allow users to add another item to the post.
+    '''
+    if request.method == 'GET':
+        return render_template('insert_item.html',
+                               page_title='Insert Item',
+                               post_id=post_id)
+    else: # request.method == 'POST'
+        conn = dbi.connect()
+        # get form data
+        item_name = request.form.get('item_name')
+        item_description = request.form.get('item_description')
+        price = request.form.get('price')
+        category = request.form.get('category')
+
+        # create a post in post table and get the post-id
+        item_id = queries.upload_item(conn, 
+                                      post_id,
+                                      item_name,
+                                      item_description, 
+                                      price,
+                                      category)
+        flash(f'{item_name} with item ID {item_id} added to post {post_id}!')
+
+        # allow user to add another item to this post
+        return render_template('insert_item.html',
+                               page_title='Insert Item',
+                               post_id=post_id)
+    
 
 @app.route('/update/<post_id>', methods=["GET", "POST"])
 def update_post(post_id):
