@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<p>Click to <a href="{{ url_for('index') }}">return to the main page</a>.</p>
+
+<h1>Add an item to post {{post_id}}</h1>
+<hr>
+<form method="post" action="{{url_for('insert_item', post_id=post_id)}}">
+    <p><label>Item Name:
+        <input required type="text" name="item_name" size="50" placeholder="Name of Item">
+    </label></p>
+
+    <p><label>Item Description:
+        <textarea required name="item_description" 
+        rows="3" cols="50" placeholder="item description"></textarea>
+    </label></p>
+
+    <p><label>Item Price:
+        <input required type="text" name="price" size="10" placeholder="price">
+    </label></p>
+
+    <p>
+        <label>Item Category
+            <select required name="category">
+                <option value="">choose</option>
+                <option value="Home">Home</option>
+                <option value="Beauty">Beauty</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Collectibles">Collectibles</option>
+                <option value="Sports">Sports</option>
+                <option value="Arts">Arts</option>
+                <option value="Books">Books</option>
+                <option value="Other">Other</option>
+            </select>
+        </label>
+    </p>
+    <p><input type="submit" value="add item to post">
+</form>
+<hr>
+
+{% endblock %}

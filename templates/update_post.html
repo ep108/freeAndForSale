@@ -6,28 +6,38 @@
     <form method=POST action="{{url_for('update_post', post_id = post.post_id)}}"> 
       <table>
         <tr>
-          <td><label for="posted-by">Posted By {{post.user_id}}</label></td>]
+          <td><label for="posted-by">Posted By {{poster}} [Post ID: {{post.post_id}}]</label></td>
         </tr>
         <tr>
-          <td><label for="post-kind">Post Kind - sale or giveaway</label></td>
-          <td><input id="post-kind" name='post-kind' value='{{post.post_kind}}'></td>
+          <td><label for="post-kind">Post Kind</label></td>
+          <td>
+            <select id="post-kind" name="post-kind" value = '{{post.post_kind}}'>
+              <option value="giveaway" {% if post.post_kind == 'giveaway' %}selected{% endif %}>giveaway</option>
+              <option value="sale" {% if post.post_kind == 'sale' %}selected{% endif %}>sale</option>
+            </select>
+          </td>
         </tr>
         <tr>
           <td><label for="post-description">Description of Post - 500 char max</label></td>
-          <td><input id="post-description" name='post-description' value='{{post.post_description}}'></td>
+          <td>
+            <textarea id="post-description" name='post-description'>{{post.post_description}}</textarea>
+          </td>
         </tr>
         <tr>
           <td><label for="post_datetime">Posted On {{post.post_datetime}}</label></td>
         </tr>
         <tr>
-          <td><label for="post-items">Items in this Post - fix later with links to items</label></td>
-          {% for item in items %}
-            <td><input id="{{item.item_id}}" name='item' value='{{item.item_name}}'></td>
-          {% endfor %}
-          
+          <td><label for="post-items">Items in this Post:</label></td>
+        </tr>
+          <tr>
+            <td><ul>
+                {% for item in items %}
+                    <li><a href="{{url_for('update_item', post_id=item.post_id, item_id=item.item_id)}}">{{item.item_name}}</a></li>
+                {% endfor %}
+            </ul></td>
         </tr>
       </table>
-      <input type="submit" name="submit" value="update">
-      <input type="submit" name="submit" value="delete">
+      <p><input type="submit" name="submit" value="update"></p>
+      <p><input type="submit" name="submit" value="delete"></p>
     </form>
     {% endblock %}
