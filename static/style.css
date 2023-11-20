@@ -1,0 +1,174 @@
+/* the --color-header and others are CSS variables, which we access later. 
+*/
+
+HTML {
+    --color-header: #007ea9;  /* color for H1-H6 and others. was deepskyblue but poor contrast. */
+    --color-hilite: #b50000;  /* was red, but this avoids WAVE contrast errors */ 
+    --color-focus: #56B929;
+    --font-family: Verdana;
+    font-family: var(--font-family)
+}
+
+/* For flashed messages; make them stand out using red and italics */
+
+#messages {
+    color: var(--color-hilite);
+    font-style: italic;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+nav li {
+    display: inline-block;
+    margin-right: 10px; /* adds space b/n the list items */
+}
+
+nav a {
+    text-decoration: none;
+    color: white; 
+}
+
+
+h1 {
+    font-size: 200%;
+    color: var(--color-header);
+}
+
+h2, h3 {
+    color: var(--color-header);
+}
+    
+
+/* for a simple navbar. Talk to Scott if you want drop-downs. */
+nav > ul {
+    display: flex;
+    flex-direction: row;
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0px;
+    padding: 0px;
+}
+
+nav > ul > li {
+    flex: 0 0 auto;
+    width: 15em; 
+}
+
+nav button, nav a {
+    display: block;
+    box-sizing: border-box; /* easier to make button and A the same size */
+    width: 100%;
+    height: 40px;
+    padding: 0px;
+    padding-bottom: 5px;
+    background-color: var(--color-header); /* was #3498db */
+    border: 2px solid black;
+    border-radius: 5px;
+    cursor: pointer;
+    /* Firefox uses font -apple-system unless I repeat the font spec here. */
+    font-family: var(--font-family);
+    font-weight: bold;
+    font-size: 1.4rem;
+}
+
+/* Only the top-level buttons are centered; lower ones are left-aligned. */
+nav > ul > li > button , nav > ul > li > a {
+    text-align: center;
+}
+
+/* because of the margin trick, this can only be used for the last element */
+
+nav li.right {
+    margin-left: auto;
+}
+
+nav button:hover, button:focus, nav a:hover, nav a:focus {
+    background-color: var(--color-focus);
+}
+
+/* About/Home page decorating */
+body {
+    background-color: #f0f0f0; /* light gray background */
+    font-family: var(--font-family);
+}
+
+h1 {
+    font-size: 2.5rem; 
+    color: var(--color-header);
+    text-align: center; 
+}
+
+p {
+    margin: 10px 0; /* space between paragraphs */
+    background-color: white;
+    padding: 10px;
+    border: 2px solid #007ea9;
+}
+
+article { /* Cast list or Movie list text */
+    background-color: white;
+    border: 2px solid #007ea9;
+    padding: 20px; 
+}
+
+a {
+    color: var(--color-header);
+    text-decoration: none;
+    transition: color 0.3s; /* smoother color transition on hover */
+}
+
+a:hover {
+    color: var(--color-focus); /* green color on hover over linked stuff */
+}
+
+.search {
+    margin: 20px auto; /* center search form */
+    max-width: 500px; /* form width */
+    padding: 15px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+form label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+form input[type="text"] {
+    width: 95%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+form input[type="submit"] {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--color-header);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+body {
+    background-image: url('../static/movie.jpg'); 
+    background-size: cover; 
+    background-repeat: no-repeat;
+    background-attachment: fixed; 
+}
