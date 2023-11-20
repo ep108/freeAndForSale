@@ -200,13 +200,17 @@ def update_item(post_id, item_id):
 @app.route('/filter/', methods=["GET", "POST"])
 def search():
     '''
-    default is all or the user can input location and category, and if
-    the user does not select the default, a page with a list (hyperlinked)
-    of all posts in that location or items that fall under the category
-    specified
+    On GET, renders search.html page which allows user to enter a keyword. 
+    On POST, it grabs what the user enters and sends them to filter.html,
+    where they can see what posts match their queried word
     '''
-    # if the user returns something in the text, we want to return an html file of everything
-    #filter html is the search
+
+    # cases: 
+    # case 1: user enters text, the default is all
+    # case 2: user enters text and specifies a location 
+    # case 3: user enters text and specifies category
+    # case 4: user enters text and specifies both 
+    
     conn = dbi.connect()
     if request.method == 'GET':
         return render_template('search.html')
@@ -214,13 +218,18 @@ def search():
         name = request.form.get('item')
         category = request.form.get('category')
         location = request.form.get('location')
+
+        # we want to check if the location is a zipcode or a res hall
+        # we set onCampus to a bool value based off of the aforementioned
         if type(location) is int:
             onCampus = False 
         else:
             onCampus = True
         
-        #we're assuming that the user has inputted text in:
-        #if the user only inputs text in, default for category and location is all
+        # the following cases have nested if else statements in the case
+        # that there is no item that satisfies all requirements in the database
+
+        # if the user only inputs text in, default for category and location is all
         if category == 'all' and location == 'all':
             posts = queries.search(conn, name)
             if posts:
@@ -229,7 +238,7 @@ def search():
                 flash("The item with the specified details were not found")
                 return render_template('search.html')
 
-        #if the user specifies item and location only, but category is default
+        # if the user specifies item and location only, but category is default
         elif location and category == 'all':
             posts = queries.filter_by_location_and_item(conn, name, location, onCampus)
             if posts:
@@ -238,7 +247,7 @@ def search():
                 flash("The item with the specified details were not found")
                 return render_template('search.html')
         
-        #if the user specifies item and category only, but location is default
+        # if the user specifies item and category only, but location is default
         elif category and location == 'all':
             posts = queries.filter_by_category_and_item(conn, name, category)
             if posts:
@@ -247,6 +256,7 @@ def search():
                 flash("The item with the specified details were not found")
                 return render_template('search.html')
         
+        # if the user specifies all 
         else:
             posts = queries.filter_by_all(conn, name, category, location, onCampus)
             if posts:
@@ -255,7 +265,6 @@ def search():
                 flash("The item with the specified details were not found")
                 return render_template('search.html')
         
-    
 @app.route('/profile/<user_id>', methods=["GET", "POST"])
 def profile(user_id):
     '''
@@ -267,18 +276,18 @@ def profile(user_id):
         person = queries.user_info(conn, user_id)
         return render_template('profile.html', person = person)
     else: 
-        #obtain all the potentially updated info
+        # obtain all the potentially updated info
         name = request.form.get("name")
         user_id = request.form.get("user_id")
         email = request.form.get("email")
         residence = request.form.get("residence")
         offcampus_address = request.form.get("offcampus_zipcode")
         flash ("You updated your profile")
-        #update the profile 
+        # update the profile 
         queries.update_profile(conn, user_id, email, name, residence, offcampus_address)        
-        print(offcampus_address)
+
+        # we want to grab their updated profile and display it
         person = queries.user_info(conn, user_id)
-        print(person)
         return render_template('profile.html', person = person)
 
 if __name__ == '__main__':
