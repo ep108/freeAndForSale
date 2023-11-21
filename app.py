@@ -218,10 +218,11 @@ def search():
         name = request.form.get('item')
         category = request.form.get('category')
         location = request.form.get('location')
+        campus_zip = request.form.get('offcampus_zip')
 
         # we want to check if the location is a zipcode or a res hall
         # we set onCampus to a bool value based off of the aforementioned
-        if type(location) is int:
+        if campus_zip is not "None":
             onCampus = False 
         else:
             onCampus = True
