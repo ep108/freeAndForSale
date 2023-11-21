@@ -271,24 +271,36 @@ def profile(user_id):
     :int user_id: unique identification of the user 
     this function updates the profile info or gets the info
     '''
+
+    # things to consider in the next phase:
+    # making users unable to edit their user-id 
+    # making it clear that users can only include either their 
+    # res hall or their off-campus zip code 
     conn = dbi.connect()
+    button = request.form.get('submit')
     if request.method == 'GET':
         person = queries.user_info(conn, user_id)
         return render_template('profile.html', person = person)
     else: 
-        # obtain all the potentially updated info
-        name = request.form.get("name")
-        user_id = request.form.get("user_id")
-        email = request.form.get("email")
-        residence = request.form.get("residence")
-        offcampus_address = request.form.get("offcampus_zipcode")
-        flash ("You updated your profile")
-        # update the profile 
-        queries.update_profile(conn, user_id, email, name, residence, offcampus_address)        
+       # the user can either update or delete their profile
+        if button == 'update':
+            name = request.form.get("name")
+            user_id = request.form.get("user_id")
+            email = request.form.get("email")
+            residence = request.form.get("residence")
+            offcampus_address = request.form.get("offcampus_zipcode")
+            flash ("You updated your profile")
+            # update the profile 
+            queries.update_profile(conn, user_id, email, name, residence, offcampus_address)        
 
-        # we want to grab their updated profile and display it
-        person = queries.user_info(conn, user_id)
-        return render_template('profile.html', person = person)
+            # we want to grab their updated profile and display it
+            person = queries.user_info(conn, user_id)
+            return render_template('profile.html', person = person)
+
+        elif button == 'delete':
+            queries.delete_profile(conn, user_id)
+            flash("You have deleted your profile")
+            return render_template('main.html', page_title='About')
 
 if __name__ == '__main__':
     import sys, os

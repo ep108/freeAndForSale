@@ -112,6 +112,17 @@ def update_profile(conn, user_id, user_email, name, residence, offcampus_address
     [user_email, name, residence, offcampus_address, user_id])
     conn.commit()
 
+def delete_profile(conn, user_id):
+    '''
+    deletes specific user from database given their user_id
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    delete from user
+    where user_id = %s''',
+    [user_id])
+    conn.commit()
+
 def upload_post(conn,user_id,post_kind, post_description, post_datetime):
     '''
     Creates a new post with a new automatically created post ID, 
