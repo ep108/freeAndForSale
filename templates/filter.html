@@ -4,11 +4,11 @@
 
 <h1>Find Items</h1>
 
-<p>Items with {{name}}:</p>
+<p>Posts with {{name}}:</p>
 <body>
     <ol>
     {% for post in posts %}
-        <li><a href="{{ url_for('update_post', post_id = post['post_id'])}}"> Click here to see a post with a {{post['item_name']}}</a>.</p> </li>   
+        <li><a href="{{ url_for('update_post', post_id = post['post_id'])}}"> Click here to check out post {{post['post_id']}}</a>.</p> </li>   
     {% endfor %}
     </ol>
 </body>
