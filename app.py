@@ -285,16 +285,28 @@ def profile(user_id):
        # the user can either update or delete their profile
         if button == 'update':
             name = request.form.get("name")
-            user_id = request.form.get("user_id")
+            id = request.form.get("user_id")
             email = request.form.get("email")
             residence = request.form.get("residence")
             offcampus_address = request.form.get("offcampus_zipcode")
-            flash ("You updated your profile")
-            # update the profile 
-            queries.update_profile(conn, user_id, email, name, residence, offcampus_address)        
+            if user_id == id: 
+                flash ("You updated your profile")
+                # update the profile 
+                queries.update_profile(conn, user_id, email, name, residence, offcampus_address)        
+            else:
+                # this will check if the updated_id already exists
+                updated_id = queries.check_id(conn, user_id)
+                if updated_id == None: 
+                    flash ("You updated your profile")
+                    # update the profile 
+                    queries.update_profile(conn, id, email, name, residence, offcampus_address)        
+                else:
+                    flash (f"The user_id {id} already exists")
+                    person = queries.user_info(conn, user_id)
+                    return render_template('profile.html', person = person)
 
             # we want to grab their updated profile and display it
-            person = queries.user_info(conn, user_id)
+            person = queries.user_info(conn, id)
             return render_template('profile.html', person = person)
 
         elif button == 'delete':

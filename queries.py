@@ -123,6 +123,15 @@ def delete_profile(conn, user_id):
     [user_id])
     conn.commit()
 
+def check_id(conn, user_id):
+    '''
+    before the user updates their user_id, this checks to see 
+    if the user_id already exists
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute(''' select user_id from user where user_id = %s''', [user_id])
+    return curs.fetchone()
+
 def upload_post(conn,user_id,post_kind, post_description, post_datetime):
     '''
     Creates a new post with a new automatically created post ID, 
