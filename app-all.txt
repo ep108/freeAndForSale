@@ -222,7 +222,7 @@ def search():
 
         # we want to check if the location is a zipcode or a res hall
         # we set onCampus to a bool value based off of the aforementioned
-        if campus_zip is not "None":
+        if campus_zip != "None":
             onCampus = False 
         else:
             onCampus = True
