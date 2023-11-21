@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<p>Click to <a href="{{ url_for('index') }}">return to the main page</a>.</p>
+
+<h1>Search</h1>
+
+<form method="post" action="{{ url_for('search')}}">
+
+    <p><label for="item">Search for item <input required type="text" name="item"></label></p>
+    <p><label for="category">Category</label></p>
+    <select id="category" name="category">
+        <option value="all">all</option>
+        <option value="home">Home</option>
+        <option value="beauty">Beauty</option>
+        <option value="electronics">Electronics</option>
+        <option value="collectibles">Collectibles</option>
+        <option value="sports">Sports</option>
+        <option value="art">Arts</option>
+        <option value="books">Books</option>
+        <option value="other">Other</option>
+    </select>
+    <p><label for="location">Location</label></p>
+    <select id="location" name="location">
+        <option value="all">all</option>
+        <option value="freeman">Freeman</option>
+        <option value="bates">Bates</option>
+        <option value="mcafee">McAfee</option>
+        <option value="tower">Tower</option>
+        <option value="claf">Claflin</option>
+        <option value="sev">Severance</option>
+        <option value="stone-d">Stone-Davis</option>
+        <option value="lake">Lake House</option>
+        <option value="pom">Pomeroy</option>
+        <option value="munger">Munger</option>
+        <option value="beebe">Beebe</option>
+        <option value="shaf">Shafer</option>
+        <option value="caz">Cazenone</option>
+        <option value="french">French House</option>
+        <option value="casa">Casa Cervantes</option>
+        <option value="offcampus">Off-Campus</option>
+    </select>
+    <p><label for="offcampus_zip">Off-Campus Address, if applicable: <input required type="text" name = "offcampus_zip" value="None"></label></p>
+    <p><input type="submit"></p>
+</form>
+
+{% endblock %}

@@ -2,6 +2,136 @@ import cs304dbi as dbi
 import os
 import subprocess
 
+def search(conn, name):
+    '''
+    Returns the pid of all the posts that contain an item whose name matches the search word.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    select post_id, item_name from item 
+    where item_name LIKE %s
+    ''', ['%'+name+'%'])
+    return curs.fetchall() 
+
+def filter_by_category(conn, category):
+    '''
+    Return the pid of all the posts that contain items whose category matches the given category.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    select post_id, item_name from item 
+    where category = %s
+    ''', [category])
+    return curs.fetchall() 
+
+def filter_by_category_and_item(conn, name, category):
+    '''
+    Return the pid of all the posts that contain the item name and the items whose category matches the given category.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    select post_id, item_name from item 
+    where category = %s and item_name LIKE %s
+    ''', [category, name])
+    return curs.fetchall() 
+
+
+def filter_by_location(conn, location, onCampus: bool):
+    '''
+    Return the pid of all the posts where zipcode == location (if onCampus is False) or residential hall == location (if onCampus is True)
+    '''
+    curs = dbi.dict_cursor(conn)
+
+    if onCampus is True: 
+        curs.execute('''
+        select item.post_id, item.item_name from area 
+        inner join item
+        where residence = %s
+        ''', [location])
+        return curs.fetchall() 
+    else: 
+        curs.execute('''
+        select item.post_id, item.item_name from area 
+        inner join item
+        where offcampus_zipcode = %s
+        ''', [location])
+
+def filter_by_location_and_item(conn, name, location, onCampus: bool):
+    '''
+    Return the pid of all the posts with item name, where zipcode == location (if onCampus is False) or residential hall == location (if onCampus is True)
+    '''
+    curs = dbi.dict_cursor(conn)
+
+    if onCampus is True: 
+        curs.execute('''
+        select item.post_id, item.item_name from area inner join item
+        where residence = %s and item_name LIKE %s
+        ''', [location, name])
+        return curs.fetchall() 
+    else: 
+        curs.execute('''
+        select item.post_id, item.item_name from area inner join item
+        where offcampus_zipcode = %s and item_name LIKE %s
+        ''', [location, name])
+        return curs.fetchall() 
+
+def filter_by_all(conn, name, category, location, onCampus: bool):
+    curs = dbi.dict_cursor(conn)
+
+    if onCampus is True: 
+        curs.execute('''
+        select item.post_id, item.item_name from area inner join item
+        where residence = %s and item_name LIKE %s and category = %s
+        ''', [location, name, category])
+        return curs.fetchall() 
+    else: 
+        curs.execute('''
+        select item.post_id, item.item_name from area inner join item
+        where offcampus_zipcode = %s and item_name LIKE %s and category = %s
+        ''', [location, name])
+        return curs.fetchall()
+
+def user_info(conn, user_id):
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    select * from user
+    where user_id = %s
+    ''',[user_id])
+    return curs.fetchone()
+
+def update_profile(conn, user_id, user_email, name, residence, offcampus_address):
+    '''
+    updates information in the profile table given a particular user_id
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    update user set email = %s, name = %s, residence = %s, offcampus_zipcode = %s
+    where user_id = %s''',
+    [user_email, name, residence, offcampus_address, user_id])
+    conn.commit()
+
+def delete_profile(conn, user_id):
+    '''
+    deletes specific user from database given their user_id
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    delete from user
+    where user_id = %s''',
+    [user_id])
+    conn.commit()
+
+def check_id(conn, user_id):
+    '''
+    before the user updates their user_id, this checks to see 
+    if the user_id already exists
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute(''' select user_id from user 
+    where user_id = %s''', 
+    [user_id])
+    return curs.fetchone()
+
 def upload_post(conn,user_id,post_kind, post_description, post_datetime):
     '''
     Creates a new post with a new automatically created post ID, 

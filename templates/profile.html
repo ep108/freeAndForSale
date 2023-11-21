@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+<p>Click to <a href="{{ url_for('index') }}">return to the main page</a>.</p>
+
+<h1>Profile</h1>
+
+<form method="post" action="">
+    <fieldset>
+        <legend>{{person['name']}} Information</legend>
+        <table>
+        <tr><td><label for="name">Name:</label></td>
+             <td><input id="name" name="name" type="text" value={{person.name}}></td></tr>
+
+        <tr><td><label for="user_id">User-Id:</label></td>
+            <td><input id="user_id" name="user_id" type="text" value={{person.user_id}}></td></tr>
+
+        <tr><td><label for="email">Email:</label></td>
+            <td><input id="email" name="email" type="text" value={{person.email}}></td></tr>
+
+        <tr><td><label for="residence">Residence:</label></td>
+            <td><input id="residence" name="residence" type="text" value={{person.residence}}></td></tr>
+
+        <tr><td><label for="offcampus_zipcode">Off-Campus Address:</label></td>
+            <td><input id="offcampus_zipcode" name="offcampus_zipcode" type="text" value={{person.offcampus_zipcode}}></td></tr>
+        </table>
+        </fieldset>
+        <p><input type="submit" name="submit" value="update"></p>
+        <p><input type="submit" name="submit" value="delete"></p>
+</form>
+
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+
+<h1>Find Items</h1>
+
+<p>Posts with {{name}}:</p>
+<body>
+    <ol>
+    {% for post in posts %}
+        <li><a href="{{ url_for('update_post', post_id = post['post_id'])}}"> Click here to check out post {{post['post_id']}}</a>.</p> </li>   
+    {% endfor %}
+    </ol>
+</body>
+
+{% endblock %}
