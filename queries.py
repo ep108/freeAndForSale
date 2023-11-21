@@ -129,7 +129,9 @@ def check_id(conn, user_id):
     if the user_id already exists
     '''
     curs = dbi.dict_cursor(conn)
-    curs.execute(''' select user_id from user_id where user_id = %s''', [user_id])
+    curs.execute(''' select user_id from user 
+    where user_id = %s''', 
+    [user_id])
     return curs.fetchone()
 
 def upload_post(conn,user_id,post_kind, post_description, post_datetime):
