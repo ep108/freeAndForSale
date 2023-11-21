@@ -273,9 +273,11 @@ def profile(user_id):
     '''
 
     # things to consider in the next phase:
-    # making users unable to edit their user-id 
     # making it clear that users can only include either their 
     # res hall or their off-campus zip code 
+
+    # the only reason why there's only update and delete and not add is because
+    # we will be implementing sessions and a log-in page in the next session 
     conn = dbi.connect()
     button = request.form.get('submit')
     if request.method == 'GET':
