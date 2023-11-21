@@ -76,7 +76,10 @@ def filter_by_location_and_item(conn, name, location, onCampus: bool):
         return curs.fetchall() 
 
 def filter_by_all(conn, name, category, location, onCampus: bool):
-    curs = dbi.dict_cursor(conn)
+    '''
+    Return the pid of all the posts with item name, specified category and location
+    '''
+   curs = dbi.dict_cursor(conn)
 
     if onCampus is True: 
         curs.execute('''
@@ -92,6 +95,9 @@ def filter_by_all(conn, name, category, location, onCampus: bool):
         return curs.fetchall()
 
 def user_info(conn, user_id):
+    '''
+    Return user's information given the user_id
+    '''
     curs = dbi.dict_cursor(conn)
     curs.execute('''
     select * from user
