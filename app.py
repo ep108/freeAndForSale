@@ -232,38 +232,24 @@ def search():
         # if the user only inputs text in, default for category and location is all
         if category == 'all' and location == 'all':
             posts = queries.search(conn, name)
-            if posts:
-                return render_template('filter.html', name = name, posts = posts)
-            else:
-                flash("The item with the specified details were not found")
-                return render_template('search.html')
 
         # if the user specifies item and location only, but category is default
         elif location and category == 'all':
             posts = queries.filter_by_location_and_item(conn, name, location, onCampus)
-            if posts:
-                return render_template('filter.html', name = name, posts = posts)
-            else:
-                flash("The item with the specified details were not found")
-                return render_template('search.html')
         
         # if the user specifies item and category only, but location is default
         elif category and location == 'all':
             posts = queries.filter_by_category_and_item(conn, name, category)
-            if posts:
-                return render_template('filter.html', name = name, posts = posts)
-            else:
-                flash("The item with the specified details were not found")
-                return render_template('search.html')
         
         # if the user specifies all 
         else:
             posts = queries.filter_by_all(conn, name, category, location, onCampus)
-            if posts:
-                return render_template('filter.html', name = name, posts = posts)
-            else:
-                flash("The item with the specified details were not found")
-                return render_template('search.html')
+        
+        if posts:
+            return render_template('filter.html', name = name, posts = posts)
+        else:
+            flash("The item with the specified details were not found")
+            return render_template('search.html')
         
 @app.route('/profile/<user_id>', methods=["GET", "POST"])
 def profile(user_id):
