@@ -2,8 +2,6 @@ import cs304dbi as dbi
 import os
 import subprocess
 
-import cs304dbi as dbi
-
 def search(conn, name):
     '''
     Returns the pid of all the posts that contain an item whose name matches the search word.
