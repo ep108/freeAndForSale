@@ -277,7 +277,7 @@ def profile(user_id):
     # res hall or their off-campus zip code 
 
     # the only reason why there's only update and delete and not add is because
-    # we will be implementing sessions and a log-in page in the next session 
+    # we will be implementing sessions and a log-in page in the next phase 
     conn = dbi.connect()
     button = request.form.get('submit')
     if request.method == 'GET':
