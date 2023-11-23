@@ -235,23 +235,18 @@ def search():
         # if the user only inputs text in, default for category and location is all
         if category == 'all' and location == 'all':
             posts = queries.search(conn, name)
-
         # if the user specifies item and location only, but category is default
         elif location and category == 'all':
             posts = queries.filter_by_location_and_item(conn, name, location, onCampus)
-        
         # if the user specifies item and category only, but location is default
         elif category and location == 'all':
             posts = queries.filter_by_category_and_item(conn, name, category)
-        
         # if user filters only by category (no text entered in search bar)
         elif category and not name:
             posts = queries.filter_by_category(conn, category)
-        
         # if user filters only by location (no text entered in search bar)
         elif location and not name:
             posts = queries.filter_by_location(conn, location, onCampus)
-        
         # if the user specifies all 
         else:
             posts = queries.filter_by_all(conn, name, category, location, onCampus)
@@ -276,42 +271,56 @@ def profile(user_id):
     # the only reason why there's only update and delete and not add is because
     # we will be implementing sessions and a log-in page in the next phase 
     conn = dbi.connect()
-    button = request.form.get('submit')
+
+    person = queries.user_info(conn, user_id)
+    # flash msg if person with user_id doesn't exist
+    if not person:
+        flash("No user with id: " + str(user_id))
+        return render_template('main.html', page_title='About')
+
     if request.method == 'GET':
-        person = queries.user_info(conn, user_id)
-        return render_template('profile.html', person = person)
-    else: 
-       # the user can either update or delete their profile
+        return render_template('profile.html', person = person, page_title='Profile')
+    else:  # POST method
+        button = request.form.get('submit')
+        # the user can either update or delete their profile
         if button == 'update':
             name = request.form.get("name")
-            id = request.form.get("user_id")
             email = request.form.get("email")
             residence = request.form.get("residence")
             offcampus_address = request.form.get("offcampus_zipcode")
 
-            if user_id == id: 
-                flash ("You updated your profile")
-                # update the profile 
-                queries.update_profile(conn, user_id, email, name, residence, offcampus_address)                
-            # new id to update profile
-            else:
-                # this will check if the updated id already exists
-                updated_id = queries.check_id(conn, id)
-                if updated_id == None: # can use updated id because it doesn't exist yet
-                    flash ("You updated your profile")
-                    # update the profile with new id
-                    queries.update_profile(conn, id, email, name, residence, offcampus_address)  
-                else:
-                    flash (f"The user_id {id} already exists")
-                    person = queries.user_info(conn, user_id) # to render page with updates (except new id)
-                    return render_template('profile.html', person = person)
+            # update the profile given a user id (not changeable for now?)
+            queries.update_profile(conn, user_id, email, name, residence, offcampus_address) 
+            new_person = queries.user_info(conn, user_id)
+            print("testing updated profile: ", new_person)
+            flash ("You updated your profile")
+            return render_template('profile.html', person = new_person, page_title='Profile')
 
-            # we want to grab their updated profile and display it
-            person = queries.user_info(conn, id) 
-            print("test: ", person)
-            #TODO: there's an issue with displaying NULL zipcode (displays as None
-            # so when we press update, db changes to None even tho it was NULL in db)??
-            return render_template('profile.html', person = person)
+
+            # if user_id == id: 
+            #     flash ("You updated your profile")
+            #     # update the profile 
+            #     queries.update_profile(conn, user_id, email, name, residence, offcampus_address)                
+            # # new id to update profile
+            # else:
+            #     # this will check if the updated id already exists
+            #     updated_id = queries.check_id(conn, id)
+            #     if updated_id == None: # can use updated id because it doesn't exist yet
+            #         flash ("You updated your profile")
+            #         # update the profile with new id
+            #         queries.update_profile(conn, id, email, name, residence, offcampus_address)  
+            #         return redirect( url_for('profile', user_id = id) )
+            #     else:
+            #         flash (f"The user_id {id} already exists")
+            #         person = queries.user_info(conn, user_id) # to render page with updates (except new id)
+            #         return render_template('profile.html', person = person, page_title='Profile')
+
+            # # we want to grab their updated profile and display it
+            # new_person = queries.user_info(conn, id) 
+            # print("test: ", new_person)
+            # #TODO: there's an issue with displaying NULL zipcode (displays as None
+            # # so when we press update, db changes to None even tho it was NULL in db)??
+            # return render_template('profile.html', person = new_person, page_title='Profile')
 
         elif button == 'delete':
             queries.delete_profile(conn, user_id)
