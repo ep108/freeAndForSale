@@ -10,19 +10,40 @@
         <legend>{{person['name']}} Information</legend>
         <table>
         <tr><td><label for="name">Name:</label></td>
-             <td><input id="name" name="name" type="text" value={{person.name}}></td></tr>
+             <td><input id="name" name="name" type="text" value="{{person.name}}"></td></tr>
 
-        <tr><td><label for="user_id">User-Id:</label></td>
-            <td><input id="user_id" name="user_id" type="text" value={{person.user_id}}></td></tr>
+        <tr><td><label for="user_id">User-Id: {{person['user_id']}}</label></td>
+            <!-- <td><input id="user_id" name="user_id" type="text" value={{person.user_id}}></td></tr> -->
 
         <tr><td><label for="email">Email:</label></td>
-            <td><input id="email" name="email" type="text" value={{person.email}}></td></tr>
+            <td><input id="email" name="email" type="text" value="{{person.email}}"></td></tr>
 
-        <tr><td><label for="residence">Residence:</label></td>
-            <td><input id="residence" name="residence" type="text" value={{person.residence}}></td></tr>
+        <tr>
+            <td><label for="residence">Residence:</label></td>
+            <td>
+                <select id="residence" name="residence" value = '{{person.residence}}'>
+                    <option value="Freeman" {% if person.residence == 'Freeman' %}selected{% endif %}>Freeman</option>
+                    <option value="Bates" {% if person.residence == 'Bates' %}selected{% endif %}>Bates</option>
+                    <option value="McAfee" {% if person.residence == 'McAfee' %}selected{% endif %}>McAfee</option>
+                    <option value="Tower" {% if person.residence == 'Tower' %}selected{% endif %}>Tower</option>
+                    <option value="Claflin" {% if person.residence == 'Claflin' %}selected{% endif %}>Claflin</option>
+                    <option value="Severence" {% if person.residence == 'Severence' %}selected{% endif %}>Severence</option>
+                    <option value="Stone-Davis" {% if person.residence == 'Stone-Davis' %}selected{% endif %}>Stone-Davis</option>
+                    <option value="Lake House" {% if person.residence == 'Lake House' %}selected{% endif %}>Lake House</option>
+                    <option value="Pomeroy" {% if person.residence == 'Pomeroy' %}selected{% endif %}>Pomeroy</option>
+                    <option value="Munger" {% if person.residence == 'Munger' %}selected{% endif %}>Munger</option>
+                    <option value="Beebe" {% if person.residence == 'Beebe' %}selected{% endif %}>Beebe</option>
+                    <option value="Shafer" {% if person.residence == 'Shafer' %}selected{% endif %}>Shafer</option>
+                    <option value="Cazenove" {% if person.residence == 'Cazenove' %}selected{% endif %}>Cazenove</option>
+                    <option value="French House" {% if person.residence == 'French House' %}selected{% endif %}>French House</option>
+                    <option value="off-campus" {% if person.residence == 'off-campus' %}selected{% endif %}>Off-Campus</option>
+                    <option value="Casa Cervantes" {% if person.residence == 'Casa Cervantes' %}selected{% endif %}>Casa Cervantes</option>
+                </select>
+            </td>
+        </tr>
 
         <tr><td><label for="offcampus_zipcode">Off-Campus Zipcode:</label></td>
-            <td><input id="offcampus_zipcode" name="offcampus_zipcode" type="text" value={{person.offcampus_zipcode}}></td></tr>
+            <td><input id="offcampus_zipcode" name="offcampus_zipcode" type="text" value="{{person.offcampus_zipcode}}"></td></tr>
         </table>
         </fieldset>
         <p><input type="submit" name="submit" value="update"></p>
