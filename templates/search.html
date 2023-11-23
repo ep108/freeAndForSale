@@ -7,7 +7,7 @@
 
 <form method="post" action="{{ url_for('search')}}">
 
-    <p><label for="item">Search for item <input required type="text" name="item"></label></p>
+    <p><label for="item">Search for item <input type="text" name="item"></label></p>
     <p><label for="category">Category</label></p>
     <select id="category" name="category">
         <option value="all">all</option>
@@ -40,7 +40,9 @@
         <option value="casa">Casa Cervantes</option>
         <option value="offcampus">Off-Campus</option>
     </select>
-    <p><label for="offcampus_zip">Off-Campus Address, if applicable: <input required type="text" name = "offcampus_zip" value="None"></label></p>
+    <p><label for="offcampus_zip">Off-Campus Zipcode, if applicable: 
+        <input required type="text" name = "offcampus_zip" value="None">
+    </label></p>
     <p><input type="submit"></p>
 </form>
 

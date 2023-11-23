@@ -4,7 +4,10 @@ import subprocess
 
 def search(conn, name):
     '''
-    Returns the pid of all the posts that contain an item whose name matches the search word.
+    Returns the pid of all the posts that contain an item whose name 
+    matches the search word. 
+
+    Note: not case sensitive
     '''
     curs = dbi.dict_cursor(conn)
     curs.execute('''
@@ -15,30 +18,35 @@ def search(conn, name):
 
 def filter_by_category(conn, category):
     '''
-    Return the pid of all the posts that contain items whose category matches the given category.
+    Return the pid and item name of all the posts 
+    that contain items whose category 
+    matches the given category.
     '''
     curs = dbi.dict_cursor(conn)
     curs.execute('''
     select post_id, item_name from item 
     where category = %s
     ''', [category])
+    # print("filtering by category: ", curs.fetchall() )
     return curs.fetchall() 
 
 def filter_by_category_and_item(conn, name, category):
     '''
-    Return the pid of all the posts that contain the item name and the items whose category matches the given category.
+    Return the pid of all the posts that contain the item 
+    name and the items whose category matches the given category.
     '''
     curs = dbi.dict_cursor(conn)
     curs.execute('''
     select post_id, item_name from item 
     where category = %s and item_name LIKE %s
-    ''', [category, name])
+    ''', [category, '%'+name+'%'])
     return curs.fetchall() 
 
 
 def filter_by_location(conn, location, onCampus: bool):
     '''
-    Return the pid of all the posts where zipcode == location (if onCampus is False) or residential hall == location (if onCampus is True)
+    Return the pid of all the posts where zipcode == location (if onCampus 
+    is False) or residential hall == location (if onCampus is True)
     '''
     curs = dbi.dict_cursor(conn)
 
@@ -58,7 +66,9 @@ def filter_by_location(conn, location, onCampus: bool):
 
 def filter_by_location_and_item(conn, name, location, onCampus: bool):
     '''
-    Return the pid of all the posts with item name, where zipcode == location (if onCampus is False) or residential hall == location (if onCampus is True)
+    Return the pid of all the posts with item name, where zipcode == 
+    location (if onCampus is False) or residential hall == location 
+    (if onCampus is True)
     '''
     curs = dbi.dict_cursor(conn)
 
@@ -66,32 +76,32 @@ def filter_by_location_and_item(conn, name, location, onCampus: bool):
         curs.execute('''
         select item.post_id, item.item_name from area inner join item
         where residence = %s and item_name LIKE %s
-        ''', [location, name])
+        ''', [location, '%'+name+'%'])
         return curs.fetchall() 
     else: 
         curs.execute('''
         select item.post_id, item.item_name from area inner join item
         where offcampus_zipcode = %s and item_name LIKE %s
-        ''', [location, name])
+        ''', [location, '%'+name+'%'])
         return curs.fetchall() 
 
 def filter_by_all(conn, name, category, location, onCampus: bool):
     '''
     Return the pid of all the posts with item name, specified category and location
     '''
-   curs = dbi.dict_cursor(conn)
+    curs = dbi.dict_cursor(conn)
 
     if onCampus is True: 
         curs.execute('''
         select item.post_id, item.item_name from area inner join item
         where residence = %s and item_name LIKE %s and category = %s
-        ''', [location, name, category])
+        ''', [location, '%'+name+'%', category])
         return curs.fetchall() 
     else: 
         curs.execute('''
         select item.post_id, item.item_name from area inner join item
         where offcampus_zipcode = %s and item_name LIKE %s and category = %s
-        ''', [location, name])
+        ''', [location, '%'+name+'%'])
         return curs.fetchall()
 
 def user_info(conn, user_id):
@@ -103,9 +113,10 @@ def user_info(conn, user_id):
     select * from user
     where user_id = %s
     ''',[user_id])
+    # print("user info: ", curs.fetchone())
     return curs.fetchone()
 
-def update_profile(conn, user_id, user_email, name, residence, offcampus_address):
+def update_profile(conn, user_id, user_email, name, residence, offcampus_zip):
     '''
     updates information in the profile table given a particular user_id
     '''
@@ -113,7 +124,7 @@ def update_profile(conn, user_id, user_email, name, residence, offcampus_address
     curs.execute('''
     update user set email = %s, name = %s, residence = %s, offcampus_zipcode = %s
     where user_id = %s''',
-    [user_email, name, residence, offcampus_address, user_id])
+    [user_email, name, residence, offcampus_zip, user_id])
     conn.commit()
 
 def delete_profile(conn, user_id):
@@ -437,4 +448,6 @@ if __name__ == '__main__':
     # testing get_poster_name()
     # print("\nTesting user name")
     # get_poster_name(conn, 1)
+
+    filter_by_category(conn, "Books")
 
