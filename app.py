@@ -289,38 +289,16 @@ def profile(user_id):
             residence = request.form.get("residence")
             offcampus_address = request.form.get("offcampus_zipcode")
 
+            # handle None values for zipcode
+            if offcampus_address == "None":
+                offcampus_address = None
+
             # update the profile given a user id (not changeable for now?)
             queries.update_profile(conn, user_id, email, name, residence, offcampus_address) 
             new_person = queries.user_info(conn, user_id)
             print("testing updated profile: ", new_person)
             flash ("You updated your profile")
             return render_template('profile.html', person = new_person, page_title='Profile')
-
-
-            # if user_id == id: 
-            #     flash ("You updated your profile")
-            #     # update the profile 
-            #     queries.update_profile(conn, user_id, email, name, residence, offcampus_address)                
-            # # new id to update profile
-            # else:
-            #     # this will check if the updated id already exists
-            #     updated_id = queries.check_id(conn, id)
-            #     if updated_id == None: # can use updated id because it doesn't exist yet
-            #         flash ("You updated your profile")
-            #         # update the profile with new id
-            #         queries.update_profile(conn, id, email, name, residence, offcampus_address)  
-            #         return redirect( url_for('profile', user_id = id) )
-            #     else:
-            #         flash (f"The user_id {id} already exists")
-            #         person = queries.user_info(conn, user_id) # to render page with updates (except new id)
-            #         return render_template('profile.html', person = person, page_title='Profile')
-
-            # # we want to grab their updated profile and display it
-            # new_person = queries.user_info(conn, id) 
-            # print("test: ", new_person)
-            # #TODO: there's an issue with displaying NULL zipcode (displays as None
-            # # so when we press update, db changes to None even tho it was NULL in db)??
-            # return render_template('profile.html', person = new_person, page_title='Profile')
 
         elif button == 'delete':
             queries.delete_profile(conn, user_id)
