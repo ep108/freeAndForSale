@@ -75,6 +75,7 @@ def create_post():
         # uses the post_id from this upload as an input when adding items to the post
         return redirect(url_for('insert_item', post_id=post_id))
     
+
 @app.route('/insert_item/<post_id>', methods=["GET", "POST"])
 def insert_item(post_id):
     '''
@@ -197,6 +198,125 @@ def update_item(post_id, item_id):
             flash('Post with id (' + str(post_id) + ') was deleted successfully')
             return render_template('main.html', page_title='About')
 
+@app.route('/filter/', methods=["GET", "POST"])
+def search():
+    '''
+    On GET, renders search.html page which allows user to enter a keyword. 
+    On POST, it grabs what the user enters and sends them to filter.html,
+    where they can see what posts match their queried word
+    '''
+    # cases: 
+    # case 1: user enters text, the default is all
+    # case 2: user enters text and specifies a location 
+    # case 3: user enters text and specifies category
+    # case 4: user enters text and specifies both 
+    # case 5: user specifies only category
+    # case 6: user specifies only location
+    
+    conn = dbi.connect()
+    if request.method == 'GET':
+        return render_template('search.html')
+    else:
+        name = request.form.get('item')
+        category = request.form.get('category')
+        location = request.form.get('location')
+        off_campus_zip = request.form.get('offcampus_zip')
+
+        # we want to check if the location is a zipcode or a res hall
+        # we set onCampus to a bool value based off of the aforementioned
+        if off_campus_zip != "None":
+            onCampus = False 
+        else:
+            onCampus = True
+        
+        # the following cases have nested if else statements in the case
+        # that there is no item that satisfies all requirements in the database
+
+        # if the user only inputs text in, default for category and location is all
+        if category == 'all' and location == 'all':
+            posts = queries.search(conn, name)
+
+        # if the user specifies item and location only, but category is default
+        elif location and category == 'all':
+            posts = queries.filter_by_location_and_item(conn, name, location, onCampus)
+        
+        # if the user specifies item and category only, but location is default
+        elif category and location == 'all':
+            posts = queries.filter_by_category_and_item(conn, name, category)
+        
+        # if user filters only by category (no text entered in search bar)
+        elif category and not name:
+            posts = queries.filter_by_category(conn, category)
+        
+        # if user filters only by location (no text entered in search bar)
+        elif location and not name:
+            posts = queries.filter_by_location(conn, location, onCampus)
+        
+        # if the user specifies all 
+        else:
+            posts = queries.filter_by_all(conn, name, category, location, onCampus)
+        
+        if posts:
+            return render_template('filter.html', posts = posts)
+        else:
+            flash("The item with the specified details were not found")
+            return render_template('search.html')
+        
+@app.route('/profile/<user_id>', methods=["GET", "POST"])
+def profile(user_id):
+    '''
+    :int user_id: unique identification of the user 
+    this function updates the profile info or gets the info
+    '''
+
+    # things to consider in the next phase:
+    # making it clear that users can only include either their 
+    # res hall or their off-campus zip code 
+
+    # the only reason why there's only update and delete and not add is because
+    # we will be implementing sessions and a log-in page in the next phase 
+    conn = dbi.connect()
+    button = request.form.get('submit')
+    if request.method == 'GET':
+        person = queries.user_info(conn, user_id)
+        return render_template('profile.html', person = person)
+    else: 
+       # the user can either update or delete their profile
+        if button == 'update':
+            name = request.form.get("name")
+            id = request.form.get("user_id")
+            email = request.form.get("email")
+            residence = request.form.get("residence")
+            offcampus_address = request.form.get("offcampus_zipcode")
+
+            if user_id == id: 
+                flash ("You updated your profile")
+                # update the profile 
+                queries.update_profile(conn, user_id, email, name, residence, offcampus_address)                
+            # new id to update profile
+            else:
+                # this will check if the updated id already exists
+                updated_id = queries.check_id(conn, id)
+                if updated_id == None: # can use updated id because it doesn't exist yet
+                    flash ("You updated your profile")
+                    # update the profile with new id
+                    queries.update_profile(conn, id, email, name, residence, offcampus_address)  
+                else:
+                    flash (f"The user_id {id} already exists")
+                    person = queries.user_info(conn, user_id) # to render page with updates (except new id)
+                    return render_template('profile.html', person = person)
+
+            # we want to grab their updated profile and display it
+            person = queries.user_info(conn, id) 
+            print("test: ", person)
+            #TODO: there's an issue with displaying NULL zipcode (displays as None
+            # so when we press update, db changes to None even tho it was NULL in db)??
+            return render_template('profile.html', person = person)
+
+        elif button == 'delete':
+            queries.delete_profile(conn, user_id)
+            flash("You have deleted your profile")
+            return render_template('main.html', page_title='About')
 
 if __name__ == '__main__':
     import sys, os

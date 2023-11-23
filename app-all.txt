@@ -1,0 +1,1243 @@
+from flask import (Flask, render_template, make_response, url_for, request,
+                   redirect, flash, session, send_from_directory, jsonify)
+from werkzeug.utils import secure_filename
+app = Flask(__name__)
+
+
+# one or the other of these. Defaults to MySQL (PyMySQL)
+# change comment characters to switch to SQLite
+
+
+import cs304dbi as dbi
+# import cs304dbi_sqlite3 as dbi
+
+
+import random
+
+import queries
+
+from datetime import datetime
+
+
+app.secret_key = 'your secret here'
+# replace that with a random key
+app.secret_key = ''.join([ random.choice(('ABCDEFGHIJKLMNOPQRSTUVXYZ' +
+                                          'abcdefghijklmnopqrstuvxyz' +
+                                          '0123456789'))
+                           for i in range(20) ])
+
+
+# This gets us better error messages for certain common request errors
+app.config['TRAP_BAD_REQUEST_ERRORS'] = True
+
+@app.route('/reset-database', methods=['POST'])
+def reset_database():
+    '''
+    A helper function for testing purposes
+    that let's us reset the database.
+    '''
+    queries.create_tables()
+    queries.insert_mock_data()
+
+    flash('Database reset successfully!')
+    return redirect(url_for('index'))
+
+@app.route('/')
+def index():
+    '''
+    Home page with links to examples
+    along with link to create a post.
+    '''
+    return render_template('main.html',page_title='About')
+
+@app.route('/create_post/', methods=['GET', 'POST'])
+def create_post():
+    '''
+    On GET, renders create_post.html page which allows user to create a post. 
+    On POST, creates a post (which creates a post-id) and allows users to 
+    add items to the post (items associated with that given post-id).
+    '''
+    if request.method == 'GET':
+        return render_template('create_post.html',page_title='Create Post')
+    else: # request.method == 'POST'
+        conn = dbi.connect()
+        # get form data
+        user_id = request.form.get('user_id')
+        post_kind = request.form.get('post_kind')
+        post_description = request.form.get('post_description')
+        post_datetime = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # create a post in post table and get the post-id
+        post_id = queries.upload_post(conn, user_id, post_kind, 
+                                      post_description, post_datetime)
+        flash(f'Post with ID {post_id} successfully created!')
+
+        # uses the post_id from this upload as an input when adding items to the post
+        return redirect(url_for('insert_item', post_id=post_id))
+    
+@app.route('/insert_item/<post_id>', methods=["GET", "POST"])
+def insert_item(post_id):
+    '''
+    On GET, renders the form that allows users to enter item information.
+    On POST, uses form data to add an item to the item table and re-renders the 
+    empty form to allow users to add another item to the post.
+    '''
+    # check if post with post_id exists before inserting items in it
+    conn = dbi.connect()
+    post = queries.return_post_if_exists(conn, post_id)
+    if not post:
+        flash("Post with ID: " + str(post_id) + " doesn't exist. \
+                Cannot add items to a post if that post doesn't exist.")
+        return render_template('main.html', page_title='About')
+
+    if request.method == 'GET':
+        return render_template('insert_item.html',
+                               page_title='Insert Item',
+                               post_id=post_id)
+    else: # request.method == 'POST'
+        # get form data
+        item_name = request.form.get('item_name')
+        item_description = request.form.get('item_description')
+        price = request.form.get('price')
+        category = request.form.get('category')
+
+
+        # create a item in item table and get the item_id
+        item_id = queries.upload_item(conn, 
+                                    post_id,
+                                    item_name,
+                                    item_description, 
+                                    price,
+                                    category)
+        flash(f'{item_name} with item ID {item_id} added to post {post_id}!')
+
+        # allow user to add another item to this post
+        return render_template('insert_item.html',
+                               page_title='Insert Item',
+                               post_id=post_id)
+    
+
+@app.route('/update/<post_id>', methods=["GET", "POST"])
+def update_post(post_id):
+    '''
+    Update/delete a post's descriptions, images, etc.
+    '''
+    conn = dbi.connect()
+    # get info about the post if post_id exists otherwise flash msg
+    post = queries.return_post_if_exists(conn, post_id)
+    if not post:
+        flash("No post with id: " + str(post_id))
+        return render_template('main.html', page_title='About')
+   
+    # else if post exists, get its items
+    items = queries.get_post_items(conn, post_id)
+    poster = queries.get_poster_name(conn, post['user_id'])
+
+    if request.method == 'GET':
+        return render_template('update_post.html', post = post, items = items, 
+                                poster = poster['name'], page_title='Update Post')
+    
+    else: # POST method
+        # get submit button value: update or delete
+        button = request.form.get('submit')
+        kind = request.form.get('post-kind')
+        description = request.form.get('post-description')
+
+
+        if button == 'update':
+            # update post with either or both new kind & description
+            queries.update_post(conn, post_id, kind, description)
+            new_post = queries.return_post_if_exists(conn, post_id)
+            flash('Post with id (' + str(post_id) + ') was updated successfully')
+            return render_template('update_post.html', post = new_post, items = items, 
+                                    poster = poster['name'], page_title='Update Post')
+       
+        elif button == 'delete':
+            # NOTE: deleting post deletes all items under it
+            queries.delete_post(conn, post_id)
+            flash('Post with id (' + str(post_id) + ') was deleted successfully')
+            return render_template('main.html', page_title='About')
+
+
+
+@app.route('/update/<post_id>/<item_id>', methods=["GET", "POST"])
+def update_item(post_id, item_id):
+    '''
+    Update/delete an item's descriptions, images, etc.
+    '''
+    conn = dbi.connect()
+
+    # get info about the item if item_id exists otherwise flash msg
+    item = queries.return_item_if_exists(conn, post_id, item_id)
+    if not item:
+        flash("No item with id: " + str(item_id))
+        return render_template('main.html', page_title='About')
+   
+    if request.method == 'GET':
+        return render_template('update_item.html', item = item, page_title='Update Item')
+
+    else: # POST method
+        # get submit button value: update or delete
+        button = request.form.get('submit')
+        name = request.form.get('item-name')
+        description = request.form.get('item-description')
+        price = request.form.get('item-price')
+        status = request.form.get('item-status')
+        category = request.form.get('item-category')
+
+        if button == 'update':
+            # update post with either or both new kind & description
+            queries.update_item(conn, post_id, item_id, name, description, price, status, category)
+            new_item = queries.return_item_if_exists(conn, post_id, item_id)
+            flash('Item with id (' + str(item_id) + ') was updated successfully')
+            return render_template('update_item.html', item = new_item, page_title='Update Item')
+       
+        elif button == 'delete':
+            queries.delete_item(conn, post_id, item_id)
+            flash('Post with id (' + str(post_id) + ') was deleted successfully')
+            return render_template('main.html', page_title='About')
+
+@app.route('/filter/', methods=["GET", "POST"])
+def search():
+    '''
+    On GET, renders search.html page which allows user to enter a keyword. 
+    On POST, it grabs what the user enters and sends them to filter.html,
+    where they can see what posts match their queried word
+    '''
+
+    # cases: 
+    # case 1: user enters text, the default is all
+    # case 2: user enters text and specifies a location 
+    # case 3: user enters text and specifies category
+    # case 4: user enters text and specifies both 
+    
+    conn = dbi.connect()
+    if request.method == 'GET':
+        return render_template('search.html')
+    else:
+        name = request.form.get('item')
+        category = request.form.get('category')
+        location = request.form.get('location')
+        campus_zip = request.form.get('offcampus_zip')
+
+        # we want to check if the location is a zipcode or a res hall
+        # we set onCampus to a bool value based off of the aforementioned
+        if campus_zip != "None":
+            onCampus = False 
+        else:
+            onCampus = True
+        
+        # the following cases have nested if else statements in the case
+        # that there is no item that satisfies all requirements in the database
+
+        # if the user only inputs text in, default for category and location is all
+        if category == 'all' and location == 'all':
+            posts = queries.search(conn, name)
+
+        # if the user specifies item and location only, but category is default
+        elif location and category == 'all':
+            posts = queries.filter_by_location_and_item(conn, name, location, onCampus)
+        
+        # if the user specifies item and category only, but location is default
+        elif category and location == 'all':
+            posts = queries.filter_by_category_and_item(conn, name, category)
+        
+        # if the user specifies all 
+        else:
+            posts = queries.filter_by_all(conn, name, category, location, onCampus)
+        
+        if posts:
+            return render_template('filter.html', name = name, posts = posts)
+        else:
+            flash("The item with the specified details were not found")
+            return render_template('search.html')
+        
+@app.route('/profile/<user_id>', methods=["GET", "POST"])
+def profile(user_id):
+    '''
+    :int user_id: unique identification of the user 
+    this function updates the profile info or gets the info
+    '''
+
+    # things to consider in the next phase:
+    # making it clear that users can only include either their 
+    # res hall or their off-campus zip code 
+
+    # the only reason why there's only update and delete and not add is because
+    # we will be implementing sessions and a log-in page in the next phase 
+    conn = dbi.connect()
+    button = request.form.get('submit')
+    if request.method == 'GET':
+        person = queries.user_info(conn, user_id)
+        return render_template('profile.html', person = person)
+    else: 
+       # the user can either update or delete their profile
+        if button == 'update':
+            name = request.form.get("name")
+            id = request.form.get("user_id")
+            email = request.form.get("email")
+            residence = request.form.get("residence")
+            offcampus_address = request.form.get("offcampus_zipcode")
+            if user_id == id: 
+                flash ("You updated your profile")
+                # update the profile 
+                queries.update_profile(conn, user_id, email, name, residence, offcampus_address)        
+            else:
+                # this will check if the updated_id already exists
+                updated_id = queries.check_id(conn, user_id)
+                if updated_id == None: 
+                    flash ("You updated your profile")
+                    # update the profile 
+                    queries.update_profile(conn, id, email, name, residence, offcampus_address)        
+                else:
+                    flash (f"The user_id {id} already exists")
+                    person = queries.user_info(conn, user_id)
+                    return render_template('profile.html', person = person)
+
+            # we want to grab their updated profile and display it
+            person = queries.user_info(conn, id)
+            return render_template('profile.html', person = person)
+
+        elif button == 'delete':
+            queries.delete_profile(conn, user_id)
+            flash("You have deleted your profile")
+            return render_template('main.html', page_title='About')
+
+if __name__ == '__main__':
+    import sys, os
+    if len(sys.argv) > 1:
+        # arg, if any, is the desired port number
+        port = int(sys.argv[1])
+        assert(port>1024)
+    else:
+        port = os.getuid()
+    # set this local variable to 'wmdb' or your personal or team db
+    db_to_use = 'ejk100_db'
+    print('will connect to {}'.format(db_to_use))
+    dbi.conf(db_to_use)
+    app.debug = True
+    app.run('0.0.0.0',port)
+import cs304dbi as dbi
+import os
+import subprocess
+
+def search(conn, name):
+    '''
+    Returns the pid of all the posts that contain an item whose name matches the search word.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    select post_id, item_name from item 
+    where item_name LIKE %s
+    ''', ['%'+name+'%'])
+    return curs.fetchall() 
+
+def filter_by_category(conn, category):
+    '''
+    Return the pid of all the posts that contain items whose category matches the given category.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    select post_id, item_name from item 
+    where category = %s
+    ''', [category])
+    return curs.fetchall() 
+
+def filter_by_category_and_item(conn, name, category):
+    '''
+    Return the pid of all the posts that contain the item name and the items whose category matches the given category.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    select post_id, item_name from item 
+    where category = %s and item_name LIKE %s
+    ''', [category, name])
+    return curs.fetchall() 
+
+
+def filter_by_location(conn, location, onCampus: bool):
+    '''
+    Return the pid of all the posts where zipcode == location (if onCampus is False) or residential hall == location (if onCampus is True)
+    '''
+    curs = dbi.dict_cursor(conn)
+
+    if onCampus is True: 
+        curs.execute('''
+        select item.post_id, item.item_name from area 
+        inner join item
+        where residence = %s
+        ''', [location])
+        return curs.fetchall() 
+    else: 
+        curs.execute('''
+        select item.post_id, item.item_name from area 
+        inner join item
+        where offcampus_zipcode = %s
+        ''', [location])
+
+def filter_by_location_and_item(conn, name, location, onCampus: bool):
+    '''
+    Return the pid of all the posts with item name, where zipcode == location (if onCampus is False) or residential hall == location (if onCampus is True)
+    '''
+    curs = dbi.dict_cursor(conn)
+
+    if onCampus is True: 
+        curs.execute('''
+        select item.post_id, item.item_name from area inner join item
+        where residence = %s and item_name LIKE %s
+        ''', [location, name])
+        return curs.fetchall() 
+    else: 
+        curs.execute('''
+        select item.post_id, item.item_name from area inner join item
+        where offcampus_zipcode = %s and item_name LIKE %s
+        ''', [location, name])
+        return curs.fetchall() 
+
+def filter_by_all(conn, name, category, location, onCampus: bool):
+    curs = dbi.dict_cursor(conn)
+
+    if onCampus is True: 
+        curs.execute('''
+        select item.post_id, item.item_name from area inner join item
+        where residence = %s and item_name LIKE %s and category = %s
+        ''', [location, name, category])
+        return curs.fetchall() 
+    else: 
+        curs.execute('''
+        select item.post_id, item.item_name from area inner join item
+        where offcampus_zipcode = %s and item_name LIKE %s and category = %s
+        ''', [location, name])
+        return curs.fetchall()
+
+def user_info(conn, user_id):
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    select * from user
+    where user_id = %s
+    ''',[user_id])
+    return curs.fetchone()
+
+def update_profile(conn, user_id, user_email, name, residence, offcampus_address):
+    '''
+    updates information in the profile table given a particular user_id
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    update user set email = %s, name = %s, residence = %s, offcampus_zipcode = %s
+    where user_id = %s''',
+    [user_email, name, residence, offcampus_address, user_id])
+    conn.commit()
+
+def delete_profile(conn, user_id):
+    '''
+    deletes specific user from database given their user_id
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    delete from user
+    where user_id = %s''',
+    [user_id])
+    conn.commit()
+
+def check_id(conn, user_id):
+    '''
+    before the user updates their user_id, this checks to see 
+    if the user_id already exists
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute(''' select user_id from user 
+    where user_id = %s''', 
+    [user_id])
+    return curs.fetchone()
+
+def upload_post(conn,user_id,post_kind, post_description, post_datetime):
+    '''
+    Creates a new post with a new automatically created post ID, 
+    kind (giveaway or sale), description (500 characters max), and 
+    time that the post was created.
+
+    Returns the post ID.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+                 INSERT INTO post(user_id, post_kind, post_description, post_datetime) 
+                 VALUES (%s,%s,%s,%s)
+                 ''',
+                 [user_id,post_kind, post_description, post_datetime])
+    conn.commit()
+    
+    # Get and return the post ID
+    curs.execute('SELECT last_insert_id()')
+    row = curs.fetchone()
+    return row['last_insert_id()']
+    
+def upload_item(conn, post_id, item_name, item_description, price, category):
+    '''
+    Uploads an item to the item table that has an automatic item ID, the item's 
+    associated post ID, the item name (100 characters max), the description 
+    (500 characters max), the price (decimal), and the category ('Home','Beauty',
+    'Electronics','Collectibles','Sports','Arts','Books','Other').
+
+    Automatically sets item status to 'available.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+                INSERT INTO item(post_id, item_name, item_description, price, status, category) 
+                VALUES (%s,%s,%s,%s,'available',%s)
+                ''',
+                [post_id, item_name, item_description, price, category])
+    conn.commit()
+
+    # Get and return the item ID
+    curs.execute('SELECT last_insert_id()')
+    row = curs.fetchone()
+    return row['last_insert_id()']
+
+def return_item_if_exists(conn, post_id, item_id):
+    '''
+    Checks if item with given id exists in database.
+
+    Returns item row with given id (dictionary).
+    (empty if isn't in db).
+    '''
+    curs = dbi.dict_cursor(conn)
+    # check if post_id is already in db
+    curs.execute('''
+    select * from item
+    where post_id = %s and item_id = %s
+    ''', [post_id, item_id])
+    item = curs.fetchone()
+    print("check exists item: ", item)
+    return item
+
+
+def update_item(conn, post_id, item_id, name, description, 
+    price, status, category):
+    '''
+    Updates item with new info
+    (if new info is submitted via form).
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    update item
+    set item_name = %s,
+    item_description = %s,
+    price = %s,
+    status = %s,
+    category = %s
+    where post_id = %s and item_id = %s
+    ''', [name, description, price, status, category,
+        post_id, item_id])
+    print("updated item")
+    conn.commit()
+
+def delete_item(conn, post_id, item_id):
+    '''
+    Deletes specified item under a specified post.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    delete from item
+    where post_id = %s and item_id = %s
+    ''', [post_id, item_id])
+    print("deleted item")
+    conn.commit()
+
+def return_post_if_exists(conn, post_id):
+    '''
+    Checks if post with given id exists in database.
+
+    Returns post row with given id (dictionary).
+    (empty if isn't in db).
+    '''
+    curs = dbi.dict_cursor(conn)
+    # check if post_id is already in db
+    curs.execute('''
+    select * from post
+    where post_id = %s
+    ''', [post_id])
+    post = curs.fetchone()
+    print("check exists post: ", post)
+    return post
+
+
+def get_post_items(conn, post_id):
+    '''
+    Get the items of a post given that this post exists.
+
+    Returns a list of dicts of items.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    select * from item
+    where post_id = %s
+    ''', [post_id])
+    items = curs.fetchall()
+    print("items in given post ", items)
+    return items
+   
+
+
+def update_post(conn, post_id, kind, description):
+    '''
+    Updates post with new kind and description
+    (if new submitted via form).
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    update post
+    set  post_kind = %s,
+    post_description = %s
+    where post_id = %s
+    ''', [kind, description, post_id])
+    print("updated post")
+    conn.commit()
+
+def delete_post_from_area(conn, post_id):
+    '''
+    Helper function of delete_post().
+
+    Deletes post_id foreign key from area
+    table - to be used before deleting a post
+    to avoid foreign key contraint issues.
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    delete from area
+    where post_id = %s
+    ''', [post_id])
+    conn.commit()
+
+
+def delete_post(conn, post_id):
+    '''
+    Deletes post with given id IF NO ITEMS
+    UNDER IT!!
+    '''
+    curs = dbi.dict_cursor(conn)
+
+    # check if there are any items related to the post
+    curs.execute('''
+    select item_id from item 
+    where post_id = %s''', 
+    [post_id])
+    items = curs.fetchall()
+
+    print("items to delete: ", items) 
+    # items to delete:  [{'item_id': 1}, {'item_id': 2}]
+
+    # if there are items under the post delete all then delete post
+    if len(items) > 0:
+        for item in items:
+            delete_item(conn, post_id, item['item_id'])
+        print("Deleted all items under the post")
+    
+    # delete post_id in area table
+    delete_post_from_area(conn, post_id)
+
+    curs.execute('''
+    delete from post
+    where post_id = %s
+    ''', [post_id])
+    print("deleted post")
+    conn.commit()
+
+def get_poster_name(conn, user_id):
+    '''
+    Given the post's user id, get 
+    the name of the user who posted
+    the post.
+
+    Returns one dict like this:
+    {'name': 'Joyce'}
+    '''
+    curs = dbi.dict_cursor(conn)
+    curs.execute('''
+    select name from user
+    where user_id = %s
+    ''', [user_id])
+    name = curs.fetchone()
+    print("name of user: ", name)
+    return name
+
+def create_tables():
+    '''
+    Helper function to 
+    reset database.
+
+    Creates tables: area, post, item,
+    user, interest in db
+    '''
+    # NOTE: info from https://docs.python.org/3/library/subprocess.html 
+    create_sql_path = os.path.join(os.path.dirname(__file__), 'create.sql')
+    command = f'mysql < {create_sql_path}'
+    # execute command
+    subprocess.run(command, shell=True)
+
+def insert_mock_data():
+    '''
+    Insert mock data for the created tables
+    in the db for testing purposes.
+    '''
+    insert_sql_path = os.path.join(os.path.dirname(__file__), 'insertdata.sql')
+    command = f'mysql < {insert_sql_path}'
+    # execute command
+    subprocess.run(command, shell=True)
+
+
+if __name__ == '__main__':
+    dbi.conf('ejk100_db')
+    conn = dbi.connect()
+
+    # resets db!
+    # create_tables()
+    # insert_mock_data()
+
+    # testing return_post_if_exists()
+    # print("\nTesting return_post_if_exists()")
+    # return_post_if_exists(conn, 1)
+    # returns: 
+    # check exists post:  {'post_id': 1, 'user_id': 1, 
+    # 'post_kind': 'sale', 'post_description': 'selling stuff 
+    # before move out!', 'post_datetime': datetime.datetime(2023, 11, 
+
+    # testing get_post_items()
+    # print("\nTesting get_post_items()")
+    # get_post_items(conn, 1) # get all items with post_id of 1
+    # returns:
+    # items in given post  [{'item_id': 1, 'post_id': 1, 'item_name':
+    # 'lamp', 'item_description': 'barely used; like new', 'price': Decimal('10.00'),
+    # 'status': 'available', 'category': 'Home'}, {'item_id': 2, 'post_id': 1, 'item_name':
+    # 'Chem txbk', 'item_description': 'never used', 'price': Decimal('5.50'), 'status':
+    # 'available', 'category': 'Books'}]
+
+    # testing update_post() - to test make sure to drop & reset tables
+    # print("\nTesting update_post()")
+    # update_post(conn, 1, "sale", "new description")
+    # return_post_if_exists(conn, 1)
+
+    # testing delete_post() - after testing, reset database!!
+    # print("\nTesting delete_post()")
+    # delete_post(conn, 1)
+
+    # testing upload_post()
+    # print("\nTesting upload_post()")
+    # upload_post(conn,2, 'giveaway','Thanksgiving giveaway!','2023-11-18 00:15:00')
+    # post_id = upload_post(conn,2, 'sale','closet cleanout','2023-11-18 01:15:00')
+    # print(f'Automatically generated post ID: {post_id}')
+
+    # testing upload_item()
+    # print("\nTesting upload_item()")
+    # upload_item(conn, 2, 'utensils','lightly used, one fork missing',0.00,'Home')
+    # upload_item(conn, 2, 'plates','set of 8, fall decorations',0.00,'Home')
+    # item_id = upload_item(conn, 2, 'linens','white and beige',0.00,'Home')
+    # print(f'Automatically generated item ID: {item_id}')
+    # testing return_item_if_exists()
+    # print("\nTesting return_item_if_exists()")
+    # return_item_if_exists(conn, 1, 2)
+
+    # testing update_item() - after testing, reset database!!
+    # print("\nTesting update_item()")
+    # update_item(conn, 1, 2, "cs textbook", "updated item description", 
+    # 6.50, "on-hold", "Books")
+    # return_item_if_exists(conn, 1, 2)
+
+    # testing delete_item() - after testing, reset DB!!
+    # print("\nTesting delete_item()")
+    # delete_item(conn, 1, 1)
+
+    # testing get_poster_name()
+    # print("\nTesting user name")
+    # get_poster_name(conn, 1)
+
+<!doctype html>
+<html lang='en'>
+<head>
+    <meta charset='utf-8'>
+    <!-- for mobile-friendly pages -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name=author content="Joyce Chung, Edith, Kim">
+    <title>{{ page_title }}</title>
+    <link rel='stylesheet' href="{{url_for('static', filename = 'style.css')}}">
+    {% block head_stuff %} {% endblock %}
+</head>
+<body>
+
+{% with messages = get_flashed_messages() %}
+{% if messages %}
+<div id="messages">
+  {% for msg in messages %}
+  <p>{{msg}}</p>
+  {% endfor %}
+</div>
+{% endif %}
+{% endwith %}
+            
+{% block nav %}
+<nav>
+  <ul>
+    <li><a href="{{url_for('index')}}">Home</a></li>
+    <li><a href="{{url_for('create_post')}}">Create a Post</a></li>
+    <li><a href="{{url_for('search')}}">Search</a></li>
+    <li><a href="{{url_for('profile', user_id = 4)}}">Profile</a></li>
+  </ul>
+</nav>
+
+<ul>
+  <li><a href="{{url_for('insert_item', post_id=1)}}">Example: Insert an item to post 1</a></li>
+  <li><a href="{{url_for('update_post', post_id=1)}}">Example: Update Post with ID 1</a></li>
+  <li><a href="{{url_for('update_item', post_id=1, item_id=1)}}">Example: Update Item with ID 1
+    under Post with ID 1
+  </a></li>
+  <li><a href="{{url_for('profile', user_id=2)}}">Example: Edith's Profile </a></li>
+</ul>
+{% endblock %}
+
+{% block main_content %}
+<h1>Welcome!</h1>
+{% endblock %}
+
+  <form action="{{url_for('reset_database')}}" method="post">
+    <button type="submit">Reset Database</button>
+  </form>
+
+  <script src="https://code.jquery.com/jquery-3.4.1.min.js"></script>
+  {% block end_scripts %}
+  {% endblock %}
+  
+</body>
+</html>
+{% extends "base.html" %}
+
+{% block main_content %}
+<p>Click to <a href="{{ url_for('index') }}">return to the main page</a>.</p>
+
+<h1>Post Items</h1>
+<form method="post" action="{{url_for('create_post')}}">
+    <p><label>User ID:
+        <input required type="text" name="user_id" size="25" placeholder="ID">
+    </label></p>
+
+    <p><label>Post Type:
+        <select required name = "post_kind">
+            <option value='sale'>Sale</option>
+            <option value='giveaway'>Giveaway</option>
+        </select>
+    </label></p>
+
+    <p><label>Post Description:
+        <textarea required name="post_description" rows="3" cols="50" placeholder="item description"></textarea>
+    </label></p>
+
+    <p><input type="submit" value="Add Items to Post"></p>
+</form>
+
+{% endblock %}
+{% extends "base.html" %}
+
+{% block main_content %}
+
+<h1>Find Items</h1>
+
+<p>Posts with {{name}}:</p>
+<body>
+    <ol>
+    {% for post in posts %}
+        <li><a href="{{ url_for('update_post', post_id = post['post_id'])}}"> Click here to check out post {{post['post_id']}}</a>.</p> </li>   
+    {% endfor %}
+    </ol>
+</body>
+
+{% endblock %}{% extends "base.html" %}
+
+{% block main_content %}
+<p>Click to <a href="{{ url_for('index') }}">return to the main page</a>.</p>
+
+<h1>Add an item to post {{post_id}}</h1>
+<hr>
+<form method="post" action="{{url_for('insert_item', post_id=post_id)}}">
+    <p><label>Item Name:
+        <input required type="text" name="item_name" size="50" placeholder="Name of Item">
+    </label></p>
+
+    <p><label>Item Description:
+        <textarea required name="item_description" 
+        rows="3" cols="50" placeholder="item description"></textarea>
+    </label></p>
+
+    <p><label>Item Price:
+        <input required type="text" name="price" size="10" placeholder="price">
+    </label></p>
+
+    <p>
+        <label>Item Category
+            <select required name="category">
+                <option value="">choose</option>
+                <option value="Home">Home</option>
+                <option value="Beauty">Beauty</option>
+                <option value="Electronics">Electronics</option>
+                <option value="Collectibles">Collectibles</option>
+                <option value="Sports">Sports</option>
+                <option value="Arts">Arts</option>
+                <option value="Books">Books</option>
+                <option value="Other">Other</option>
+            </select>
+        </label>
+    </p>
+    <p><input type="submit" value="add item to post">
+</form>
+<hr>
+
+{% endblock %}
+{% extends "base.html" %}
+
+{% block main_content %}
+<h1>Hi, Welcome to Free & For Sale</h1>
+{% endblock %}
+{% extends "base.html" %}
+
+{% block main_content %}
+<p>Click to <a href="{{ url_for('index') }}">return to the main page</a>.</p>
+
+<h1>Profile</h1>
+
+<form method="post" action="">
+    <fieldset>
+        <legend>{{person['name']}} Information</legend>
+        <table>
+        <tr><td><label for="name">Name:</label></td>
+             <td><input id="name" name="name" type="text" value={{person.name}}></td></tr>
+
+        <tr><td><label for="user_id">User-Id:</label></td>
+            <td><input id="user_id" name="user_id" type="text" value={{person.user_id}}></td></tr>
+
+        <tr><td><label for="email">Email:</label></td>
+            <td><input id="email" name="email" type="text" value={{person.email}}></td></tr>
+
+        <tr><td><label for="residence">Residence:</label></td>
+            <td><input id="residence" name="residence" type="text" value={{person.residence}}></td></tr>
+
+        <tr><td><label for="offcampus_zipcode">Off-Campus Address:</label></td>
+            <td><input id="offcampus_zipcode" name="offcampus_zipcode" type="text" value={{person.offcampus_zipcode}}></td></tr>
+        </table>
+        </fieldset>
+        <p><input type="submit" name="submit" value="update"></p>
+        <p><input type="submit" name="submit" value="delete"></p>
+</form>
+
+{% endblock %}{% extends "base.html" %}
+
+{% block main_content %}
+<p>Click to <a href="{{ url_for('index') }}">return to the main page</a>.</p>
+
+<h1>Search</h1>
+
+<form method="post" action="{{ url_for('search')}}">
+
+    <p><label for="item">Search for item <input required type="text" name="item"></label></p>
+    <p><label for="category">Category</label></p>
+    <select id="category" name="category">
+        <option value="all">all</option>
+        <option value="home">Home</option>
+        <option value="beauty">Beauty</option>
+        <option value="electronics">Electronics</option>
+        <option value="collectibles">Collectibles</option>
+        <option value="sports">Sports</option>
+        <option value="art">Arts</option>
+        <option value="books">Books</option>
+        <option value="other">Other</option>
+    </select>
+    <p><label for="location">Location</label></p>
+    <select id="location" name="location">
+        <option value="all">all</option>
+        <option value="freeman">Freeman</option>
+        <option value="bates">Bates</option>
+        <option value="mcafee">McAfee</option>
+        <option value="tower">Tower</option>
+        <option value="claf">Claflin</option>
+        <option value="sev">Severance</option>
+        <option value="stone-d">Stone-Davis</option>
+        <option value="lake">Lake House</option>
+        <option value="pom">Pomeroy</option>
+        <option value="munger">Munger</option>
+        <option value="beebe">Beebe</option>
+        <option value="shaf">Shafer</option>
+        <option value="caz">Cazenone</option>
+        <option value="french">French House</option>
+        <option value="casa">Casa Cervantes</option>
+        <option value="offcampus">Off-Campus</option>
+    </select>
+    <p><label for="offcampus_zip">Off-Campus Address, if applicable: <input required type="text" name = "offcampus_zip" value="None"></label></p>
+    <p><input type="submit"></p>
+</form>
+
+{% endblock %}{% extends "base.html" %}
+  <!-- database is  ejk100_db-->
+  {% block main_content %}
+  <h1>Update Item</h1>
+
+    <form method=POST action="{{url_for('update_item', post_id = item.post_id, item_id = item.item_id)}}"> 
+      <table>
+        <tr>
+          <td><label for="item-post">Item Under Post with ID: {{item.post_id}}</label></td>
+        </tr>
+        <tr>
+          <td><label for="item-name">Item Name - 100 char max</label></td>
+          <td><input id="item-name" name='item-name' value='{{item.item_name}}'></td>
+        </tr>
+        <tr>
+          <td><label for="item-description">Description of Item - 500 char max</label></td>
+          <td>
+            <textarea id="item-description" name='item-description'>{{item.item_description}}</textarea>
+          </td>
+        </tr>
+        <tr>
+            <td><label for="item-price">Item Price</label></td>
+            <td><input id="item-price" name='item-price' value='{{item.price}}'></td>
+        </tr>
+        <tr>
+            <td><label for="item-status">Item Status</label></td>
+            <td>
+                <select id="item-status" name="item-status" value = '{{item.status}}'>
+                    <option value="sold" {% if item.status == 'sold' %}selected{% endif %}>sold</option>
+                    <option value="on-hold" {% if item.status == 'on-hold' %}selected{% endif %}>on-hold</option>
+                    <option value="available" {% if item.status == 'available' %}selected{% endif %}>available</option>
+                </select>
+            </td>
+        </tr>
+        <tr>
+            <td><label for="item-category">Item Category</label></td>
+            <td>
+                <select id="item-category" name="item-category" value = '{{item.category}}'>
+                    <option value="Home" {% if item.category == 'Home' %}selected{% endif %}>Home</option>
+                    <option value="Beauty" {% if item.category == 'Beauty' %}selected{% endif %}>Beauty</option>
+                    <option value="Electronics" {% if item.category == 'Electronics' %}selected{% endif %}>Electronics</option>
+                    <option value="Collectables" {% if item.category == 'Collectables' %}selected{% endif %}>Collectables</option>
+                    <option value="Sports" {% if item.category == 'Sports' %}selected{% endif %}>Sports</option>
+                    <option value="Arts" {% if item.category == 'Arts' %}selected{% endif %}>Arts</option>
+                    <option value="Books" {% if item.category == 'Books' %}selected{% endif %}>Books</option>
+                    <option value="Other" {% if item.category == 'Other' %}selected{% endif %}>Other</option>
+                </select>
+            </td>
+        </tr>
+      </table>
+      <p><input type="submit" name="submit" value="update"></p>
+      <p><input type="submit" name="submit" value="delete"></p>
+    </form>
+    {% endblock %}{% extends "base.html" %}
+  <!-- database is  ejk100_db-->
+  {% block main_content %}
+  <h1>Update Post</h1>
+
+    <form method=POST action="{{url_for('update_post', post_id = post.post_id)}}"> 
+      <table>
+        <tr>
+          <td><label for="posted-by">Posted By {{poster}} [Post ID: {{post.post_id}}]</label></td>
+        </tr>
+        <tr>
+          <td><label for="post-kind">Post Kind</label></td>
+          <td>
+            <select id="post-kind" name="post-kind" value = '{{post.post_kind}}'>
+              <option value="giveaway" {% if post.post_kind == 'giveaway' %}selected{% endif %}>giveaway</option>
+              <option value="sale" {% if post.post_kind == 'sale' %}selected{% endif %}>sale</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td><label for="post-description">Description of Post - 500 char max</label></td>
+          <td>
+            <textarea id="post-description" name='post-description'>{{post.post_description}}</textarea>
+          </td>
+        </tr>
+        <tr>
+          <td><label for="post_datetime">Posted On {{post.post_datetime}}</label></td>
+        </tr>
+        <tr>
+          <td><label for="post-items">Items in this Post:</label></td>
+        </tr>
+          <tr>
+            <td><ul>
+                {% for item in items %}
+                    <li><a href="{{url_for('update_item', post_id=item.post_id, item_id=item.item_id)}}">{{item.item_name}}</a></li>
+                {% endfor %}
+            </ul></td>
+        </tr>
+      </table>
+      <p><input type="submit" name="submit" value="update"></p>
+      <p><input type="submit" name="submit" value="delete"></p>
+    </form>
+    {% endblock %}/* the --color-header and others are CSS variables, which we access later. 
+*/
+
+HTML {
+    --color-header: #007ea9;  /* color for H1-H6 and others. was deepskyblue but poor contrast. */
+    --color-hilite: #b50000;  /* was red, but this avoids WAVE contrast errors */ 
+    --color-focus: #56B929;
+    --font-family: Verdana;
+    font-family: var(--font-family)
+}
+
+/* For flashed messages; make them stand out using red and italics */
+
+#messages {
+    color: var(--color-hilite);
+    font-style: italic;
+}
+
+nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+nav li {
+    display: inline-block;
+    margin-right: 10px; /* adds space b/n the list items */
+}
+
+nav a {
+    text-decoration: none;
+    color: white; 
+}
+
+
+h1 {
+    font-size: 200%;
+    color: var(--color-header);
+}
+
+h2, h3 {
+    color: var(--color-header);
+}
+    
+
+/* for a simple navbar. Talk to Scott if you want drop-downs. */
+nav > ul {
+    display: flex;
+    flex-direction: row;
+}
+
+nav ul {
+    list-style-type: none;
+    margin: 0px;
+    padding: 0px;
+}
+
+nav > ul > li {
+    flex: 0 0 auto;
+    width: 15em; 
+}
+
+nav button, nav a {
+    display: block;
+    box-sizing: border-box; /* easier to make button and A the same size */
+    width: 100%;
+    height: 40px;
+    padding: 0px;
+    padding-bottom: 5px;
+    background-color: var(--color-header); /* was #3498db */
+    border: 2px solid black;
+    border-radius: 5px;
+    cursor: pointer;
+    /* Firefox uses font -apple-system unless I repeat the font spec here. */
+    font-family: var(--font-family);
+    font-weight: bold;
+    font-size: 1.4rem;
+}
+
+/* Only the top-level buttons are centered; lower ones are left-aligned. */
+nav > ul > li > button , nav > ul > li > a {
+    text-align: center;
+}
+
+/* because of the margin trick, this can only be used for the last element */
+
+nav li.right {
+    margin-left: auto;
+}
+
+nav button:hover, button:focus, nav a:hover, nav a:focus {
+    background-color: var(--color-focus);
+}
+
+/* About/Home page decorating */
+body {
+    background-color: #f0f0f0; /* light gray background */
+    font-family: var(--font-family);
+}
+
+h1 {
+    font-size: 2.5rem; 
+    color: var(--color-header);
+    text-align: center; 
+}
+
+p {
+    margin: 10px 0; /* space between paragraphs */
+    background-color: white;
+    padding: 10px;
+    border: 2px solid #007ea9;
+}
+
+article { /* Cast list or Movie list text */
+    background-color: white;
+    border: 2px solid #007ea9;
+    padding: 20px; 
+}
+
+a {
+    color: var(--color-header);
+    text-decoration: none;
+    transition: color 0.3s; /* smoother color transition on hover */
+}
+
+a:hover {
+    color: var(--color-focus); /* green color on hover over linked stuff */
+}
+
+.search {
+    margin: 20px auto; /* center search form */
+    max-width: 500px; /* form width */
+    padding: 15px;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+form label {
+    display: block;
+    margin-bottom: 10px;
+}
+
+form input[type="text"] {
+    width: 95%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+form select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+form input[type="submit"] {
+    width: 100%;
+    padding: 10px;
+    background-color: var(--color-header);
+    color: #fff;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+body {
+    background-image: url('../static/movie.jpg'); 
+    background-size: cover; 
+    background-repeat: no-repeat;
+    background-attachment: fixed; 
+}
