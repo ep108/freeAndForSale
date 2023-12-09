@@ -343,10 +343,17 @@ def profile(user_id):
         return render_template('main.html', page_title='About')
 
     if request.method == 'GET':
+        suid = session.get('uid')
+        if suid != int(user_id):
+            flash("You cannot access someone else's profile")
+            # want to tell them they can't get someone else's profile, so we'll redirect them back
+            return redirect(url_for('profile', user_id = suid))
         return render_template('profile.html', person = person, page_title='Profile')
+
     else:  # POST method
         button = request.form.get('submit')
         # the user can either update or delete their profile
+
         if button == 'update':
             name = request.form.get("name")
             email = request.form.get("email")
@@ -377,6 +384,7 @@ def profile(user_id):
                 session.pop('logged_in')
                 flash('You are logged out')
                 return redirect(url_for('index'))
+        
 
 if __name__ == '__main__':
     import sys, os
