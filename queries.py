@@ -184,11 +184,12 @@ def login_user(conn, email, password):
         # no such user
         return (False, False)
     user_id, hashed = row
+    print(user_id, hashed)
     hashed2_bytes = bcrypt.hashpw(password.encode('utf-8'),
                                   hashed.encode('utf-8'))
     hashed2 = hashed2_bytes.decode('utf-8')
     if hashed == hashed2:
-        return (True, uid)
+        return (True, user_id)
     else:
         # password incorrect
         return (False, False)
