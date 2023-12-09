@@ -22,6 +22,7 @@
 {% endwith %}
             
 {% block nav %}
+{%if session['uid']%}
 <nav>
   <ul>
     <li><a href="{{url_for('index')}}">Home</a></li>
@@ -39,6 +40,7 @@
   </a></li>
   <li><a href="{{url_for('profile', user_id=2)}}">Example: Edith's Profile </a></li>
 </ul>
+{% endif %}
 {% endblock %}
 
 {% block main_content %}

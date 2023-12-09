@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+
+<h1>Create an Account</h1>
+<form id="joinform" action="{{url_for('signup')}}" method="POST">
+    <h2>Please Enter The Following Info</h2>
+    <p><label>Name <input type="text" name="name"></label></p>
+    <p><label for = "residence">Residence</label></p>
+    <select id="residence" name="residence">
+        <option value="all">all</option>
+        <option value="freeman">Freeman</option>
+        <option value="bates">Bates</option>
+        <option value="mcafee">McAfee</option>
+        <option value="tower">Tower</option>
+        <option value="claf">Claflin</option>
+        <option value="sev">Severance</option>
+        <option value="stone-d">Stone-Davis</option>
+        <option value="lake">Lake House</option>
+        <option value="pom">Pomeroy</option>
+        <option value="munger">Munger</option>
+        <option value="beebe">Beebe</option>
+        <option value="shaf">Shafer</option>
+        <option value="caz">Cazenone</option>
+        <option value="french">French House</option>
+        <option value="casa">Casa Cervantes</option>
+        <option value="off-campus">Off-Campus</option>
+    </select>
+    <p><label for="offcampus_zip">Off-Campus Zipcode, if applicable: 
+        <input required type="text" name = "offcampus_zip" value="None">
+    </label></p>
+    <p><label> Wellesley Email <input type="text" name="email"></label></p>
+    <p><label><input type="password" name="password1" required> Password </label></p>
+    <p><label><input type="password" name="password2" required> Password again </label></p>
+    <p><button type="submit">Submit</button></p>
+</form>
+{% endblock %}
+
+
+{% block jquery_scripts %}
+<script>
+$("#joinform").on('submit', function (event) {
+     var pw1 = $(this).find('[name=password1]').val();
+     var pw2 = $(this).find('[name=password2]').val();
+     // should also check for length and common words etc
+     if( pw1 != pw2 ) {
+         // something more sophisticated than alert would be nice
+         alert("passwords don't match");
+     }
+});
+</script>
+{% endblock %}

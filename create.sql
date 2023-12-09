@@ -22,7 +22,8 @@ create table user (
     'Stone-Davis', 'Lake House', 'Pomeroy', 'Munger',
     'Beebe', 'Shafer', 'Cazenove', 'French House',
     'off-campus', 'Casa Cervantes'),
-    offcampus_zipcode varchar(5)
+    offcampus_zipcode varchar(5),
+    hashed char(60)
 )
 ENGINE = InnoDB;
 

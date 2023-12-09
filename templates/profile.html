@@ -27,7 +27,7 @@
                     <option value="McAfee" {% if person.residence == 'McAfee' %}selected{% endif %}>McAfee</option>
                     <option value="Tower" {% if person.residence == 'Tower' %}selected{% endif %}>Tower</option>
                     <option value="Claflin" {% if person.residence == 'Claflin' %}selected{% endif %}>Claflin</option>
-                    <option value="Severence" {% if person.residence == 'Severence' %}selected{% endif %}>Severence</option>
+                    <option value="Severance" {% if person.residence == 'Severance' %}selected{% endif %}>Severance</option>
                     <option value="Stone-Davis" {% if person.residence == 'Stone-Davis' %}selected{% endif %}>Stone-Davis</option>
                     <option value="Lake House" {% if person.residence == 'Lake House' %}selected{% endif %}>Lake House</option>
                     <option value="Pomeroy" {% if person.residence == 'Pomeroy' %}selected{% endif %}>Pomeroy</option>
@@ -48,6 +48,7 @@
         </fieldset>
         <p><input type="submit" name="submit" value="update"></p>
         <p><input type="submit" name="submit" value="delete"></p>
+        <p><input type="submit" name="submit" value="logout"></p>
 </form>
 
 {% endblock %}

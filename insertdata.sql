@@ -3,16 +3,16 @@ use ejk100_db;
 
 -- insert sample users (user_id is autoincremented)
 -- user_id: 1
-insert into user(email, `name`, residence, offcampus_zipcode) 
-values ("dc103@wellesley.edu", "Joyce", "Freeman", NULL);
+insert into user(email, `name`, residence, offcampus_zipcode, hashed) 
+values ("dc103@wellesley.edu", "Joyce", "Freeman", NULL, NULL);
 
 -- user_id: 2
-insert into user(email, `name`, residence, offcampus_zipcode) 
-values ("edith@wellesley.edu", "Edith", "Tower", NULL);
+insert into user(email, `name`, residence, offcampus_zipcode, hashed) 
+values ("edith@wellesley.edu", "Edith", "Tower", NULL, NULL);
 
 -- user_id: 3
-insert into user(email, `name`, residence, offcampus_zipcode) 
-values ("kim@wellesley.edu", "Kim", "off-campus", "02142");
+insert into user(email, `name`, residence, offcampus_zipcode, hashed) 
+values ("kim@wellesley.edu", "Kim", "off-campus", "02142", NULL);
 
 
 -- insert sample posts (post_id is autoincremented)

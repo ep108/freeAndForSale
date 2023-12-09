@@ -1,6 +1,8 @@
+import pymysql
 import cs304dbi as dbi
 import os
 import subprocess
+import bcrypt
 
 def search(conn, name):
     '''
@@ -138,16 +140,58 @@ def delete_profile(conn, user_id):
     [user_id])
     conn.commit()
 
-def check_id(conn, user_id):
+# conn, name, residence, zipcode, email, passwd1
+def insert_user(conn, name, residence, zipcode, email, password, verbose=False):
+    ''' 
+    inserts given email & password into the user table.  
+    Returns three values: the uid, whether there was a duplicate key error, 
+    and either false or an exception object.
     '''
-    before the user updates their user_id, this checks to see 
-    if the user_id already exists
-    '''
-    curs = dbi.dict_cursor(conn)
-    curs.execute(''' select user_id from user 
-    where user_id = %s''', 
-    [user_id])
-    return curs.fetchone()
+    hashed_pw = bcrypt.hashpw(password.encode('utf-8'),
+                           bcrypt.gensalt())
+    curs = dbi.cursor(conn)
+    try: 
+        curs.execute('''INSERT INTO user(email, name, residence, offcampus_zipcode, hashed) 
+                        VALUES(%s, %s, %s, %s, %s)''',
+                     [email, name, residence, zipcode, hashed_pw.decode('utf-8')])
+        conn.commit()
+        curs.execute('select last_insert_id()')
+        row = curs.fetchone()
+        return (row[0], False, False)
+    except pymysql.err.IntegrityError as err:
+        details = err.args
+        if verbose:
+            print('error inserting user',details)
+        if details[0] == pymysql.constants.ER.DUP_ENTRY:
+            if verbose:
+                print('duplicate key for email {}'.format(email))
+            return (False, True, False)
+        else:
+            if verbose:
+                print('some other error!')
+            return (False, False, err)
+
+def login_user(conn, email, password):
+    '''tries to log the user in given email & password. 
+    Returns True if success and returns the uid as the second value.
+    Otherwise, False, False.'''
+    curs = dbi.cursor(conn)
+    curs.execute('''SELECT user_id, hashed FROM user 
+                    WHERE email = %s''',
+                 [email])
+    row = curs.fetchone()
+    if row is None:
+        # no such user
+        return (False, False)
+    user_id, hashed = row
+    hashed2_bytes = bcrypt.hashpw(password.encode('utf-8'),
+                                  hashed.encode('utf-8'))
+    hashed2 = hashed2_bytes.decode('utf-8')
+    if hashed == hashed2:
+        return (True, uid)
+    else:
+        # password incorrect
+        return (False, False)
 
 def upload_post(conn,user_id,post_kind, post_description, post_datetime):
     '''

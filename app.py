@@ -1,5 +1,5 @@
 from flask import (Flask, render_template, make_response, url_for, request,
-                   redirect, flash, session, send_from_directory, jsonify)
+                   redirect, flash, session, send_from_directory, jsonify, session)
 from werkzeug.utils import secure_filename
 app = Flask(__name__)
 
@@ -48,8 +48,72 @@ def index():
     Home page with links to examples
     along with link to create a post.
     '''
+    return redirect(url_for('login'))
+
+
+    # If user is logged in, the main page will be rendered
     return render_template('main.html',page_title='About')
 
+@app.route('/login/', methods = ['GET', 'POST'])
+def login():
+    '''
+    Login Page for user to log into before accessing the website
+    '''
+    if request.method == "GET":
+        return render_template('login.html')
+    else:
+        email = request.form.get('email')
+        passwd = request.form.get('password')
+        conn = dbi.connect()
+        (ok, uid) = queries.login_user(conn, email, passwd)
+        if not ok:
+            flash('login incorrect, please try again or join')
+            return render_template('login.html')
+        ## success
+        print('LOGIN', email)
+        flash('successfully logged in as '+ email)
+        session['email'] = email
+        session['uid'] = uid
+        session['logged_in'] = True
+        session['visits'] = 1
+        return redirect(url_for('profile', user_id = uid))
+
+
+@app.route('/signup/', methods = ['GET', 'POST'])
+def signup():
+    '''
+    Signup Page for user to join/sign up before being able to login
+    '''
+    if request.method == "GET":
+        return render_template('signup.html')
+    else:
+        conn = dbi.connect()
+
+        name = request.form.get('name')
+        residence = request.form.get('residence')
+        zipcode = request.form.get('offcampus_zip')
+        email = request.form.get('email')
+        passwd1 = request.form.get('password1')
+        passwd2 = request.form.get('password2')
+    
+        if passwd1 != passwd2:
+            flash('passwords do not match')
+            return render_template('signup.html')
+
+        (uid, is_dup, other_err) = queries.insert_user(conn, name, residence, zipcode, email, passwd1)
+        if other_err:
+            raise other_err
+        if is_dup:
+            flash('Sorry; that email is taken')
+            return render_template('signup.html')
+        ## success
+        flash('Your UID is {}'.format(uid))
+        session['email'] = email
+        session['uid'] = uid
+        session['logged_in'] = True
+        session['visits'] = 1
+        return redirect(url_for('profile', user_id = uid))
+      
 @app.route('/create_post/', methods=['GET', 'POST'])
 def create_post():
     '''
@@ -304,6 +368,15 @@ def profile(user_id):
             queries.delete_profile(conn, user_id)
             flash("You have deleted your profile")
             return render_template('main.html', page_title='About')
+        
+        elif button == "logout":
+            if 'email' in session:
+                email = session['email']
+                session.pop('email')
+                session.pop('uid')
+                session.pop('logged_in')
+                flash('You are logged out')
+                return redirect(url_for('index'))
 
 if __name__ == '__main__':
     import sys, os

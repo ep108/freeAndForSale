@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block main_content %}
+
+<h1>Login</h1>
+
+<p>Please login or join by clicking "sign-up" to create your account:</p>
+
+<form id="loginform" action="{{url_for('login')}}" method="POST">
+    <h2>Login</h2>
+    <p><label>Email <input type="text" name="email"></label></p>
+    <p><label>Password: <input type="password" name="password" required></label></p>
+    <p><button type="submit" name="submit" value="signin">Submit</button></p>
+</form>
+<button><a href="{{url_for('signup')}}">Sign-Up</a></button>
+{% endblock %}
