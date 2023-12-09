@@ -22,7 +22,7 @@
 {% endwith %}
             
 {% block nav %}
-{%if session['uid']%}
+{%if {{session['uid']}} %}
 <nav>
   <ul>
     <li><a href="{{url_for('index')}}">Home</a></li>
